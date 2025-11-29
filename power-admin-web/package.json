@@ -1,0 +1,34 @@
+{
+  "name": "power-admin-web",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@iconify/vue": "^5.0.0",
+    "axios": "^1.5.0",
+    "dayjs": "^1.11.10",
+    "element-plus": "^2.4.1",
+    "pinia": "^2.1.6",
+    "terser": "^5.44.1",
+    "unplugin-icons": "^22.5.0",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "@vue/tsconfig": "^0.4.0",
+    "eslint": "^8.51.0",
+    "eslint-plugin-vue": "^9.18.1",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.2"
+  }
+}

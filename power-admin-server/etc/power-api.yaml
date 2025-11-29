@@ -1,0 +1,27 @@
+Name: power-api
+Host: 0.0.0.0
+Port: 8888
+
+# Database Configuration
+Mysql:
+  DataSource: "root:root@tcp(127.0.0.1:3306)/power_admin?charset=utf8mb4&parseTime=True&loc=Local"
+
+# Redis Configuration
+Redis:
+  Host: 127.0.0.1
+  Port: 6379
+  Pass: ""
+  Db: 0
+
+# JWT Configuration
+Auth:
+  AccessSecret: "power_admin_secret_klasjdf23423j4lk23j4l23kj4l23j"
+  AccessExpire: 48000000
+  RefreshSecret: "power_admin_refresh_secret_klasjdf23423j4lk23j4l23kj4l23j"
+  RefreshExpire: 72000000
+
+JwtConfig:
+  AccessSecret: "power_admin_secret_klasjdf23423j4lk23j4l23kj4l23j"
+  AccessExpire: 48000000
+  RefreshSecret: "power_admin_refresh_secret_klasjdf23423j4lk23j4l23kj4l23j"
+  RefreshExpire: 72000000

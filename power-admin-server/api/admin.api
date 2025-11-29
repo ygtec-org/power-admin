@@ -1,0 +1,513 @@
+syntax = "v1"
+
+info (
+	title:   "Power Admin API"
+	desc:    "通用管理后台API"
+	author:  "Power Admin Team"
+	email:   "admin@example.com"
+	version: "1.0.0"
+)
+
+type (
+	// 认证相关类型
+	LoginReq {
+		Phone    string `json:"phone"`
+		Password string `json:"password"`
+	}
+	LoginResp {
+		Token    string `json:"token"`
+		UserId   int64  `json:"userId"`
+		Nickname string `json:"nickname"`
+		Avatar   string `json:"avatar"`
+	}
+	UserInfoResp {
+		Id       int64  `json:"id"`
+		Username string `json:"username"`
+		Phone    string `json:"phone"`
+		Nickname string `json:"nickname"`
+		Avatar   string `json:"avatar"`
+		Email    string `json:"email"`
+	}
+	// 用户管理相关类型
+	UserListReq {
+		Page     int    `json:"page,default=1"`
+		PageSize int    `json:"pageSize,default=10"`
+		Username string `json:"username,optional"`
+		Phone    string `json:"phone,optional"`
+	}
+	UserInfo {
+		Id        int64  `json:"id"`
+		Username  string `json:"username"`
+		Phone     string `json:"phone"`
+		Email     string `json:"email"`
+		Nickname  string `json:"nickname"`
+		Avatar    string `json:"avatar"`
+		Gender    int    `json:"gender"`
+		Status    int    `json:"status"`
+		CreatedAt string `json:"createdAt"`
+	}
+	UserListResp {
+		Total int64      `json:"total"`
+		Data  []UserInfo `json:"list"`
+	}
+	CreateUserReq {
+		Username string `json:"username"`
+		Phone    string `json:"phone"`
+		Email    string `json:"email,optional"`
+		Nickname string `json:"nickname,optional"`
+		Gender   int    `json:"gender,default=0"`
+		Password string `json:"password"`
+	}
+	UpdateUserReq {
+		Id       int64  `json:"id"`
+		Email    string `json:"email,optional"`
+		Nickname string `json:"nickname,optional"`
+		Avatar   string `json:"avatar,optional"`
+		Gender   int    `json:"gender,optional"`
+	}
+	DeleteUserReq {
+		Id int64 `json:"id"`
+	}
+	GetUserReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	GetUserRolesReq {
+		UserID int64 `json:"userId" path:"id"`
+	}
+	GetUserRolesResp {
+		Data []RoleInfo `json:"data"`
+	}
+	AssignRolesToUserReq {
+		UserID  int64   `json:"userId" path:"id"`
+		RoleIds []int64 `json:"roleIds"`
+	}
+	AssignRolesToUserResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	// 角色管理相关类型
+	RoleListReq {
+		Page     int    `json:"page,default=1"`
+		PageSize int    `json:"pageSize,default=10"`
+		Name     string `json:"name,optional"`
+	}
+	RoleInfo {
+		Id          int64  `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Status      int    `json:"status"`
+		CreatedAt   string `json:"createdAt"`
+	}
+	RoleListResp {
+		Total int64      `json:"total"`
+		Data  []RoleInfo `json:"list"`
+	}
+	CreateRoleReq {
+		Name        string `json:"name"`
+		Description string `json:"description,optional"`
+	}
+	UpdateRoleReq {
+		Id          int64  `json:"id"`
+		Description string `json:"description,optional"`
+		Status      int    `json:"status,optional"`
+	}
+	DeleteRoleReq {
+		Id int64 `json:"id"`
+	}
+	GetRoleReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	GetRolePermissionsReq {
+		RoleID int64 `json:"roleId,optional" path:"id"`
+	}
+	GetRolePermissionsResp {
+		Data []PermissionInfo `json:"data"`
+	}
+	AssignPermissionsReq {
+		RoleID        int64   `json:"roleId" path:"id"`
+		PermissionIds []int64 `json:"permissionIds"`
+	}
+	AssignPermissionsResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	// 菜单管理相关类型
+	MenuListReq {
+		Page     int   `json:"page,default=1"`
+		PageSize int   `json:"pageSize,default=10"`
+		ParentId int64 `json:"parentId,optional"`
+	}
+	MenuItem {
+		Id        int64      `json:"id"`
+		ParentId  int64      `json:"parentId"`
+		MenuName  string     `json:"menuName"`
+		MenuPath  string     `json:"menuPath"`
+		Component string     `json:"component"`
+		Icon      string     `json:"icon"`
+		Sort      int        `json:"sort"`
+		Status    int        `json:"status"`
+		Menu      int        `json:"menu"`
+		MenuType  int        `json:"menuType"`
+		CreatedAt string     `json:"createdAt"`
+		Children  []MenuItem `json:"children,optional"`
+	}
+	MenuListResp {
+		Total int64      `json:"total"`
+		Data  []MenuItem `json:"list"`
+	}
+	CreateMenuReq {
+		ParentId  int64  `json:"parentId,optional"`
+		MenuName  string `json:"menuName"`
+		MenuPath  string `json:"menuPath,optional"`
+		Component string `json:"component,optional"`
+		Icon      string `json:"icon,optional"`
+		Sort      int    `json:"sort,default=0"`
+		Menu      int    `json:"menu,default=1"`
+		MenuType  int    `json:"menuType,default=1"`
+	}
+	UpdateMenuReq {
+		Id        int64  `json:"id"`
+		MenuName  string `json:"menuName,optional"`
+		MenuPath  string `json:"menuPath,optional"`
+		Component string `json:"component,optional"`
+		Icon      string `json:"icon,optional"`
+		Sort      int    `json:"sort,optional"`
+		Status    int    `json:"status,optional"`
+		Menu      int    `json:"menu,optional"`
+		MenuType  int    `json:"menuType,optional"`
+	}
+	DeleteMenuReq {
+		Id int64 `json:"id"`
+	}
+	GetMenuReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// 权限管理相关类型
+	PermissionListReq {
+		Page     int    `json:"page,default=1"`
+		PageSize int    `json:"pageSize,default=10"`
+		Resource string `json:"resource,optional"`
+	}
+	PermissionInfo {
+		Id          int64  `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Resource    string `json:"resource"`
+		Action      string `json:"action"`
+		Status      int    `json:"status"`
+		CreatedAt   string `json:"createdAt"`
+	}
+	PermissionListResp {
+		Total int64            `json:"total"`
+		Data  []PermissionInfo `json:"list"`
+	}
+	CreatePermissionReq {
+		Name        string `json:"name"`
+		Description string `json:"description,optional"`
+		Resource    string `json:"resource"`
+		Action      string `json:"action"`
+	}
+	UpdatePermissionReq {
+		Id     int64 `json:"id"`
+		Status int   `json:"status,optional"`
+	}
+	DeletePermissionReq {
+		Id int64 `json:"id"`
+	}
+	GetPermissionReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// 字典管理相关类型
+	DictListReq {
+		Page     int    `form:"page,default=1"`
+		PageSize int    `form:"pageSize,default=10"`
+		Dict     string `form:"dict,optional"`
+	}
+	DictInfo {
+		Id          int64  `json:"id"`
+		Dict        string `json:"dict"`
+		DictLabel   string `json:"dictLabel"`
+		DictValue   string `json:"dictValue"`
+		Description string `json:"description"`
+		Sort        int    `json:"sort"`
+		DictType    string `json:"dictType"`
+		Status      int    `json:"status"`
+	}
+	DictListResp {
+		Total int64      `json:"total"`
+		Data  []DictInfo `json:"list"`
+	}
+	CreateDictReq {
+		Dict        string `json:"dict"`
+		DictLabel   string `json:"dictLabel"`
+		DictValue   string `json:"dictValue"`
+		Description string `json:"description,optional"`
+		DictType    string `json:"dictType,optional"`
+		Sort        int    `json:"sort,default=0"`
+	}
+	UpdateDictReq {
+		Id        int64  `json:"id"`
+		DictLabel string `json:"dictLabel,optional"`
+		Sort      int    `json:"sort,optional"`
+		Status    int    `json:"status,optional"`
+	}
+	DeleteDictReq {
+		Id int64 `json:"id"`
+	}
+	GetDictReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// API管理相关类型
+	ApiListReq {
+		Page     int    `form:"page,default=1"`
+		PageSize int    `form:"pageSize,default=10"`
+		ApiPath  string `form:"apiPath,optional"`
+	}
+	ApiInfo {
+		Id          int64  `json:"id"`
+		ApiName     string `json:"apiName"`
+		ApiPath     string `json:"apiPath"`
+		ApiMethod   string `json:"apiMethod"`
+		Group       string `json:"group"`
+		Description string `json:"description"`
+		Status      int    `json:"status"`
+		CreatedAt   string `json:"createdAt"`
+	}
+	ApiListResp {
+		Total    int64     `json:"total"`
+		ApiInfos []ApiInfo `json:"list"`
+	}
+	CreateApiReq {
+		ApiName     string `json:"apiName"`
+		ApiPath     string `json:"apiPath"`
+		ApiMethod   string `json:"apiMethod"`
+		Description string `json:"description,optional"`
+	}
+	UpdateApiReq {
+		Id     int64 `json:"id" path:"id"`
+		Status int   `json:"status,optional"`
+	}
+	DeleteApiReq {
+		Id int64 `json:"id"`
+	}
+	GetApiReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// 通用响应结构
+	Response {
+		Code int         `json:"code"`
+		Msg  string      `json:"msg"`
+		Data interface{} `json:"data,omitempty"`
+	}
+	// 角色权限绑定相关类型
+	RolePermissionItem {
+		Id       int64  `json:"id"`
+		ParentId int64  `json:"parentId,optional"`
+		Name     string `json:"name"`
+		Path     string `json:"path"`
+		Type     string `json:"type"` // "menu" 或 "api"
+		Group    string `json:"group,optional"` // API所属分组
+		Method   string `json:"method,optional"` // API的HTTP方法
+	}
+	GetRoleMenuAndApiResp {
+		Menus []RolePermissionItem `json:"menus"`
+		Apis  []RolePermissionItem `json:"apis"`
+	}
+	AssignRoleMenuAndApiReq {
+		RoleId  int64   `json:"roleId" path:"id"`
+		MenuIds []int64 `json:"menuIds"`
+		ApiIds  []int64 `json:"apiIds"`
+	}
+	AssignRoleMenuAndApiResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+)
+
+@server (
+	group:  "auth"
+	prefix: "/api/admin"
+)
+// 认证API（无需JWT）
+service power-api {
+	@handler Login
+	post /auth/login (LoginReq) returns (LoginResp)
+
+	@handler Logout
+	post /auth/logout
+}
+
+@server (
+	group:      "auth"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+// 需要认证的API
+service power-api {
+	@handler GetUserInfo
+	get /auth/info returns (UserInfoResp)
+}
+
+@server (
+	group:      "user"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+// 用户管理API
+service power-api {
+	@handler UserList
+	get /system/users (UserListReq) returns (UserListResp)
+
+	@handler CreateUser
+	post /system/users (CreateUserReq)
+
+	@handler UpdateUser
+	put /system/users (UpdateUserReq)
+
+	@handler DeleteUser
+	delete /system/users (DeleteUserReq)
+
+	@handler GetUser
+	get /system/users/:id (GetUserReq) returns (UserInfo)
+
+	@handler GetUserRoles
+	get /system/users/:id/roles (GetUserRolesReq) returns (GetUserRolesResp)
+
+	@handler AssignRolesToUser
+	post /system/users/:id/roles (AssignRolesToUserReq) returns (AssignRolesToUserResp)
+}
+
+@server (
+	group:      "role"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+// 角色管理API
+service power-api {
+	@handler RoleList
+	get /system/roles (RoleListReq) returns (RoleListResp)
+
+	@handler CreateRole
+	post /system/roles (CreateRoleReq)
+
+	@handler UpdateRole
+	put /system/roles (UpdateRoleReq)
+
+	@handler DeleteRole
+	delete /system/roles (DeleteRoleReq)
+
+	@handler GetRole
+	get /system/roles/:id (GetRoleReq) returns (RoleInfo)
+
+	@handler GetRolePermissions
+	get /system/roles/:id/permissions (GetRolePermissionsReq) returns (GetRolePermissionsResp)
+
+	@handler AssignPermissions
+	post /system/roles/:id/permissions (AssignPermissionsReq) returns (AssignPermissionsResp)
+
+	@handler GetRoleMenuAndApi
+	get /system/roles/:id/menu-and-api (GetRolePermissionsReq) returns (GetRoleMenuAndApiResp)
+
+	@handler AssignRoleMenuAndApi
+	post /system/roles/:id/menu-and-api (AssignRoleMenuAndApiReq) returns (AssignRoleMenuAndApiResp)
+}
+
+@server (
+	group:      "menu"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+// 菜单管理API
+service power-api {
+	@handler MenuList
+	get /system/menus (MenuListReq) returns (MenuListResp)
+
+	@handler CreateMenu
+	post /system/menus (CreateMenuReq)
+
+	@handler UpdateMenu
+	put /system/menus (UpdateMenuReq)
+
+	@handler DeleteMenu
+	delete /system/menus (DeleteMenuReq)
+
+	@handler GetMenu
+	get /system/menus/:id (GetMenuReq) returns (MenuItem)
+}
+
+@server (
+	group:      "permissions"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+// 权限管理API
+service power-api {
+	@handler PermissionList
+	get /system/permissions (PermissionListReq) returns (PermissionListResp)
+
+	@handler CreatePermission
+	post /system/permissions (CreatePermissionReq)
+
+	@handler UpdatePermission
+	put /system/permissions (UpdatePermissionReq)
+
+	@handler DeletePermission
+	delete /system/permissions (DeletePermissionReq)
+
+	@handler GetPermission
+	get /system/permissions/:id (GetPermissionReq) returns (PermissionInfo)
+}
+
+@server (
+	group:      "dicts"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+// 字典管理API
+service power-api {
+	@handler DictList
+	get /content/dicts (DictListReq) returns (DictListResp)
+
+	@handler CreateDict
+	post /content/dicts (CreateDictReq)
+
+	@handler UpdateDict
+	put /content/dicts (UpdateDictReq)
+
+	@handler DeleteDict
+	delete /content/dicts (DeleteDictReq)
+
+	@handler GetDict
+	get /content/dicts/:id (GetDictReq) returns (DictInfo)
+}
+
+@server (
+	group:      "iface"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+// API管理API
+service power-api {
+	@handler ApiList
+	get /system/apis (ApiListReq) returns (ApiListResp)
+
+	@handler CreateApi
+	post /system/apis (CreateApiReq)
+
+	@handler UpdateApi
+	put /system/apis/:id (UpdateApiReq)
+
+	@handler DeleteApi
+	delete /system/apis (DeleteApiReq)
+
+	@handler GetApi
+	get /system/apis/:id (GetApiReq) returns (ApiInfo)
+}
+
