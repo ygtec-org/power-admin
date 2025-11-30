@@ -238,13 +238,13 @@ func (RoleMenu) TableName() string {
 
 type CasbinRule struct {
 	ID    int64  `gorm:"primaryKey;autoIncrement;comment:规则ID" json:"id"`
-	PType string `gorm:"size:10;index;comment:策略类型" json:"ptype"`
-	V0    string `gorm:"size:50;index;comment:字段V0" json:"v0"`
-	V1    string `gorm:"size:50;index;comment:字段V1" json:"v1"`
-	V2    string `gorm:"size:50;comment:字段V2" json:"v2"`
-	V3    string `gorm:"size:50;comment:字段V3" json:"v3"`
-	V4    string `gorm:"size:50;comment:字段V4" json:"v4"`
-	V5    string `gorm:"size:50;comment:字段V5" json:"v5"`
+	PType string `gorm:"column:ptype; size:10;index;comment:策略类型" json:"ptype"`
+	V0    string `gorm:"column:v0; size:50;index;comment:字段V0" json:"v0"`
+	V1    string `gorm:"column:v1; size:50;index;comment:字段V1" json:"v1"`
+	V2    string `gorm:"column:v2; size:50;comment:字段V2" json:"v2"`
+	V3    string `gorm:"column:v3; size:50;comment:字段V3" json:"v3"`
+	V4    string `gorm:"column:v4;	 size:50;comment:字段V4" json:"v4"`
+	V5    string `gorm:"column:v5; size:50;comment:字段V5" json:"v5"`
 }
 
 // TableName 指定表名

@@ -69,6 +69,23 @@ func (r *APIRepository) List(offset, limit int) ([]models.API, int64, error) {
 	return apis, total, nil
 }
 
+func (r *APIRepository) All() ([]models.API, int64, error) {
+	var apis []models.API
+	var total int64
+
+	err := r.db.Model(&models.API{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	err = r.db.Find(&apis).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return apis, total, nil
+}
+
 // GetAPIs 获取API列表（与List相同）
 func (r *APIRepository) GetAPIs(offset, limit int) ([]models.API, int64, error) {
 	return r.List(offset, limit)

@@ -37,14 +37,13 @@ func (l *GetRoleMenuAndApiLogic) GetRoleMenuAndApi(req *types.GetRolePermissions
 	}
 
 	// 获取所有API
-	apis, _, err := l.svcCtx.APIRepo.List(1, 1000)
+	apis, _, err := l.svcCtx.APIRepo.All()
 	if err != nil {
 		l.Errorf("Failed to get apis: %v", err)
 		return nil, err
 	}
 
-	// 从casbin_rule表中查询该角色已有的菜单权限
-	// 从casbin_rule表中查询该角色已有的菜单权限是是从casbin版版表或role_menus表
+	// 从role_menus表中查询该角色已有的菜单权限
 	var roleMenus []models.RoleMenu
 	l.svcCtx.DB.Where("role_id = ?", roleID).Find(&roleMenus)
 	l.Infof("Role menus for role %d: %v", roleID, roleMenus)

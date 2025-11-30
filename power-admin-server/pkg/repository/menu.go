@@ -75,6 +75,27 @@ func (r *MenuRepository) List(offset, limit, parentId int) ([]models.Menu, int64
 	return menus, total, nil
 }
 
+// All 获取全部菜单
+func (r *MenuRepository) All(parentId int64) ([]models.Menu, int64, error) {
+	var menus []models.Menu
+	var total int64
+
+	err := r.db.Model(&models.Menu{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	where := r.db.Where("status = 1")
+	if parentId > 0 {
+		where = where.Where("parent_id = ?", parentId)
+	}
+	err = where.Order("sort").Find(&menus).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return menus, total, nil
+}
+
 // GetMenuTree 获取菜单树形结构
 func (r *MenuRepository) GetMenuTree(parentID int64) ([]*models.Menu, error) {
 	var menus []models.Menu

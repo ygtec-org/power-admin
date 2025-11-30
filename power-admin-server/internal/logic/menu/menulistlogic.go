@@ -31,7 +31,7 @@ func (l *MenuListLogic) MenuList(req *types.MenuListReq) (resp *types.MenuListRe
 	//offset := (req.Page - 1) * req.PageSize
 
 	// 获取分页菜单数据
-	menus, total, err := l.svcCtx.MenuRepo.List(0, 0, int(req.ParentId))
+	menus, total, err := l.svcCtx.MenuRepo.All(req.ParentId)
 	if err != nil {
 		return nil, err
 	}
