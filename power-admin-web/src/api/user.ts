@@ -53,7 +53,7 @@ export const deleteUser = (id: number) => {
 
 // 为用户分配角色
 export const assignRolesToUser = (userId: number, roleIds: number[]) => {
-  return request.post(`/system/users/${userId}/roles`, { roleIds })
+  return request.post(`/system/users/${userId}/roles`, { userId, roleIds })
 }
 
 // 获取用户的角色

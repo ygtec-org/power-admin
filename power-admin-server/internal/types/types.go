@@ -47,7 +47,7 @@ type AssignRoleMenuAndApiResp struct {
 }
 
 type AssignRolesToUserReq struct {
-	UserID  int64   `json:"userId" path:"id"`
+	UserID  int64   `json:"userId"`
 	RoleIds []int64 `json:"roleIds"`
 }
 
@@ -190,7 +190,7 @@ type GetUserReq struct {
 }
 
 type GetUserRolesReq struct {
-	UserID int64 `json:"userId" path:"id"`
+	UserID int64 `json:"userId,optional" path:"id"`
 }
 
 type GetUserRolesResp struct {

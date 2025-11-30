@@ -29,6 +29,13 @@ type ServiceContext struct {
 	AppRepo        *repository.AppRepository
 	ReviewRepo     *repository.ReviewRepository
 
+	// CMS Repositories
+	CmsContentRepo  repository.ContentRepository
+	CmsCategoryRepo repository.CategoryRepository
+	CmsTagRepo      repository.TagRepository
+	CmsUserRepo     repository.CmsUserRepository
+	CmsCommentRepo  repository.CommentRepository
+
 	// Permission
 	Permission          *permission.RBACEnforcer
 	AdminAuthMiddleware rest.Middleware
@@ -68,6 +75,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic("Failed to initialize permission manager: " + err.Error())
 	}
 
+	// 初始化CMS repositories
+	cmsContentRepo := repository.NewContentRepository(db)
+	cmsCategoryRepo := repository.NewCategoryRepository(db)
+	cmsTagRepo := repository.NewTagRepository(db)
+	cmsUserRepo := repository.NewCmsUserRepository(db)
+	cmsCommentRepo := repository.NewCommentRepository(db)
+
 	return &ServiceContext{
 		Config:              c,
 		DB:                  db,
@@ -80,6 +94,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		APIRepo:             apiRepo,
 		AppRepo:             appRepo,
 		ReviewRepo:          reviewRepo,
+		CmsContentRepo:      cmsContentRepo,
+		CmsCategoryRepo:     cmsCategoryRepo,
+		CmsTagRepo:          cmsTagRepo,
+		CmsUserRepo:         cmsUserRepo,
+		CmsCommentRepo:      cmsCommentRepo,
 		Permission:          permissionManager,
 		AdminAuthMiddleware: middleware.NewAdminAuthMiddleware(&c, permissionManager).Handle,
 	}
@@ -87,7 +106,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 func autoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(
-		// 在这里添加需要自动迁移的模型
+		// 系统模型
 		&models.User{},
 		&models.Role{},
 		&models.Menu{},
@@ -100,5 +119,20 @@ func autoMigrate(db *gorm.DB) error {
 		&models.Plugin{},
 		&models.RoleMenu{},
 		&models.CasbinRule{},
+
+		// CMS模型
+		//&models.CmsContent{},
+		//&models.CmsCategory{},
+		//&models.CmsTag{},
+		//&models.CmsContentTag{},
+		//&models.CmsContentRevision{},
+		//&models.CmsUser{},
+		//&models.CmsComment{},
+		//&models.CmsPermission{},
+		//&models.CmsAdminRole{},
+		//&models.CmsPluginStatus{},
+		//&models.CmsAuditLog{},
+		//&models.CmsLike{},
+		//&models.CmsDraft{},
 	)
 }

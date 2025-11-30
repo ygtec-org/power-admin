@@ -3,6 +3,7 @@ package user
 
 import (
 	"context"
+	"power-admin-server/common/constant"
 
 	"power-admin-server/internal/svc"
 	"power-admin-server/internal/types"
@@ -27,6 +28,9 @@ func NewGetUserRolesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetU
 func (l *GetUserRolesLogic) GetUserRoles(req *types.GetUserRolesReq) (resp *types.GetUserRolesResp, err error) {
 	userID := req.UserID
 
+	if userID == 0 {
+		userID = l.ctx.Value(constant.AdminUserKey).(int64)
+	}
 	// 获取该用户的所有角色
 	roles, err := l.svcCtx.UserRepo.GetRoles(userID)
 	if err != nil {

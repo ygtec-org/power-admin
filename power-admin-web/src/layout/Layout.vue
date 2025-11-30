@@ -48,7 +48,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { RouterLink, RouterView } from 'vue-router'
@@ -76,7 +76,26 @@ const loadMenus = async () => {
     const res = await getMenuTree()
     // 后端返回格式: { data: { total, data: [...] } }
     // 响应拦截器提取后: { data: { total, data: [...] } }
-    menus.value = res.data.list || res.data || []
+    let menuList = res.data.list || res.data || []
+    
+    // 添加 CMS 内容系统菜单
+    const cmsMenu = {
+      id: 'cms-system',
+      menuName: 'CMS内容系统',
+      menuPath: '#',
+      icon: 'document',
+      children: [
+        { id: 'cms-content', menuName: '内容管理', menuPath: '/cms/content', icon: 'document' },
+        { id: 'cms-category', menuName: '分类管理', menuPath: '/cms/category', icon: 'list' },
+        { id: 'cms-tag', menuName: '标签管理', menuPath: '/cms/tag', icon: 'list' },
+        { id: 'cms-comment', menuName: '评论管理', menuPath: '/cms/comment', icon: 'document' },
+        { id: 'cms-user', menuName: '用户管理', menuPath: '/cms/user', icon: 'user' },
+        { id: 'cms-publish', menuName: '发布管理', menuPath: '/cms/publish', icon: 'link' },
+      ]
+    }
+    
+    menuList.push(cmsMenu)
+    menus.value = menuList
     console.log('加载的菜单数据:', menus.value)
   } catch (error) {
     console.error('获取菜单失败:', error)
@@ -84,8 +103,8 @@ const loadMenus = async () => {
 }
 
 // 根据图标名称返回 emoji
-const getMenuIcon = (icon: string) => {
-  const iconMap: Record<string, string> = {
+const getMenuIcon = (icon) => {
+  const iconMap = {
     'setting': '⚙️',
     'user': '👤',
     'admin': '🎯',

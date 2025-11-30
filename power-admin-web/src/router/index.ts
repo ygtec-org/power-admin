@@ -14,6 +14,14 @@ import ApiList from '../pages/system/api/ApiList.vue'
 // 内容管理
 import DictList from '../pages/content/dict/DictList.vue'
 
+// CMS内容系统
+import CMSContentList from '../pages/cms/content/ContentList.vue'
+import CMSCategoryList from '../pages/cms/category/CategoryList.vue'
+import CMSTagList from '../pages/cms/tag/TagList.vue'
+import CMSCommentList from '../pages/cms/comment/CommentList.vue'
+import CMSUserList from '../pages/cms/user/UserList.vue'
+import CMSPublishList from '../pages/cms/publish/PublishList.vue'
+
 // 应用市场
 import AppMarket from '../pages/market/AppMarket.vue'
 
@@ -73,6 +81,43 @@ const routes: RouteRecordRaw[] = [
         name: 'DictList',
         component: DictList,
         meta: { title: '字典管理' },
+      },
+      // CMS内容系统
+      {
+        path: '/cms/content',
+        name: 'CMSContentList',
+        component: CMSContentList,
+        meta: { title: '内容管理' },
+      },
+      {
+        path: '/cms/category',
+        name: 'CMSCategoryList',
+        component: CMSCategoryList,
+        meta: { title: '分类管理' },
+      },
+      {
+        path: '/cms/tag',
+        name: 'CMSTagList',
+        component: CMSTagList,
+        meta: { title: '标签管理' },
+      },
+      {
+        path: '/cms/comment',
+        name: 'CMSCommentList',
+        component: CMSCommentList,
+        meta: { title: '评论管理' },
+      },
+      {
+        path: '/cms/user',
+        name: 'CMSUserList',
+        component: CMSUserList,
+        meta: { title: '用户管理' },
+      },
+      {
+        path: '/cms/publish',
+        name: 'CMSPublishList',
+        component: CMSPublishList,
+        meta: { title: '发布管理' },
       },
       // 应用市场
       {

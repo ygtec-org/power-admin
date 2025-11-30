@@ -31,10 +31,37 @@
             <td>{{ user.email || '-' }}</td>
             <td><span class="badge" :class="user.status === 1 ? 'success' : 'danger'">{{ user.status === 1 ? '启用' : '禁用' }}</span></td>
             <td>
-              <div class="role-tags">
-                <div v-for="role in (userRoles[user.id] || [])" :key="role.id" class="role-tag">
-                  <span>{{ role.name }}</span>
-                  <button @click="handleRemoveRole(user.id, role.id)" class="remove-btn">×</button>
+              <div class="role-cell">
+                <div class="role-selector-wrapper" :class="{ active: activeRoleUserId === user.id }">
+                  <div class="role-input-box" @click.stop="toggleRoleSelector(user.id)">
+                    <div class="role-input-content">
+                      <div v-if="(Array.isArray(userRoles[user.id]) ? userRoles[user.id] : []).length === 0" class="placeholder">选择角色</div>
+                      <div v-else class="role-tags-inline">
+                        <span v-for="(role, index) in Array.isArray(userRoles[user.id]) ? userRoles[user.id].slice(0, 1) : []" :key="role.id" class="role-tag-item">
+                          {{ role.name }}
+                          <button @click.stop="handleRemoveRole(user.id, role.id)" class="tag-remove">×</button>
+                        </span>
+                        <span v-if="Array.isArray(userRoles[user.id]) && userRoles[user.id].length > 1" class="role-count">+{{ userRoles[user.id].length - 1 }}</span>
+                      </div>
+                    </div>
+                    <span class="dropdown-arrow" :class="{ active: activeRoleUserId === user.id }">▼</span>
+                  </div>
+                  
+                  <div v-if="activeRoleUserId === user.id" class="role-dropdown-menu" @click.stop="">
+                    <div v-if="roles.length === 0" class="empty-message">没有可选择的角色</div>
+                    <div v-else>
+                      <div
+                        v-for="role in roles"
+                        :key="role.id"
+                        class="dropdown-item"
+                        :class="{ selected: isRoleSelected(user.id, role.id) }"
+                        @click.stop="handleAddRole(user.id, role.id)"
+                      >
+                        {{ role.name }}
+                        <span v-if="isRoleSelected(user.id, role.id)" class="checkmark">✓</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </td>
@@ -124,7 +151,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { getUsers, createUser, updateUser, deleteUser, assignRolesToUser, getUserRoles } from '../../../api/user'
 import { getRoles } from '../../../api/role'
 import { ElMessage } from 'element-plus'
@@ -150,7 +177,8 @@ const form = ref({
 })
 const selectedUser = ref(null)
 
-// 确认对话框相关
+// 角色下拉框相关
+const activeRoleUserId = ref(null) // 追踪当前打开的下拉框下止
 const showConfirm = ref(false)
 const deleteTarget = ref(null)
 
@@ -167,13 +195,23 @@ const loadUsers = async (pageNum = page.value, pageSizeNum = pageSize.value) => 
     for (const user of users.value) {
       try {
         const roleRes = await getUserRoles(user.id)
-        userRoles.value[user.id] = roleRes.data || []
+        console.log('getUserRoles response:', roleRes)
+        // API返回可能是 {data: [...]} 或 {data: {data: [...]}} 或 {data: {list: [...]}}
+        let userRolesList = []
+        if (Array.isArray(roleRes.data)) {
+          userRolesList = roleRes.data
+        } else if (roleRes.data && Array.isArray(roleRes.data.data)) {
+          userRolesList = roleRes.data.data
+        } else if (roleRes.data && Array.isArray(roleRes.data.list)) {
+          userRolesList = roleRes.data.list
+        }
+        userRoles.value[user.id] = userRolesList
       } catch (error) {
         userRoles.value[user.id] = []
       }
     }
   } catch (error) {
-    notify.error(error.message || '获取用户列表失败')
+    ElMessage.error(error.message || '获取用户列表失败')
   }
 }
 
@@ -181,30 +219,76 @@ const loadUsers = async (pageNum = page.value, pageSizeNum = pageSize.value) => 
 const loadRoles = async () => {
   try {
     const res = await getRoles({ pageSize: 1000 })
-    roles.value = res.data.list || []
+    console.log('getRoles response:', res)
+    // 处理不同的API返回格式
+    let roleList = []
+    if (Array.isArray(res.data)) {
+      roleList = res.data
+    } else if (res.data && Array.isArray(res.data.list)) {
+      roleList = res.data.list
+    } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+      roleList = res.data.data
+    }
+    roles.value = roleList
+    console.log('roles.value after loading:', roles.value)
   } catch (error) {
     console.log('获取角色列表失败:', error.message)
+    ElMessage.error('获取角色列表失败')
+  }
+}
+
+// 切换用户的下拉框可见性
+const toggleRoleSelector = (userId) => {
+  activeRoleUserId.value = activeRoleUserId.value === userId ? null : userId
+}
+
+// 判断角色是否已选中
+const isRoleSelected = (userId, roleId) => {
+  const userRolesList = Array.isArray(userRoles.value[userId]) ? userRoles.value[userId] : []
+  return userRolesList.some(r => r.id === roleId)
+}
+
+// 添加角色
+const handleAddRole = async (userId, roleId) => {
+  try {
+    const currentRoles = Array.isArray(userRoles.value[userId]) ? userRoles.value[userId] : []
+    if (currentRoles.some(r => r.id === roleId)) {
+      ElMessage.warning('该角色已选中')
+      return
+    }
+    
+    const roleToAdd = roles.value.find(r => r.id === roleId)
+    if (roleToAdd) {
+      userRoles.value[userId] = [...currentRoles, roleToAdd]
+    }
+    
+    const allRoleIds = userRoles.value[userId].map(r => r.id)
+    await assignRolesToUser(userId, allRoleIds)
+    ElMessage.success('角色添加成功')
+    activeRoleUserId.value = null
+  } catch (error) {
+    ElMessage.error(error.message || '角色添加失败')
   }
 }
 
 const handleRemoveRole = async (userId, roleId) => {
-  if (!confirm('\u786e定要取消该角色么?')) {
+  if (!confirm('确定要取消该角色么?')) {
     return
   }
   
   try {
     // 获取当前用户的所有角色，然后删除指定的角色
-    const currentRoles = userRoles.value[userId] || []
+    const currentRoles = Array.isArray(userRoles.value[userId]) ? userRoles.value[userId] : []
     const newRoleIds = currentRoles.filter(r => r.id !== roleId).map(r => r.id)
     
     // 重新分配角色（不含需要删除的那个）
     await assignRolesToUser(userId, newRoleIds)
-    notify.success('角色删除成功')
+    ElMessage.success('角色删除成功')
     
     // 更新本地角色数据
     userRoles.value[userId] = currentRoles.filter(r => r.id !== roleId)
   } catch (error) {
-    notify.error(error.message || '角色删除失败')
+    ElMessage.error(error.message || '角色删除失败')
   }
 }
 
@@ -251,10 +335,10 @@ const handleDelete = async (user) => {
 const handleConfirmDelete = async () => {
   try {
     await deleteUser(deleteTarget.value.id)
-    notify.success('删除成功')
+    ElMessage.success('删除成功')
     loadUsers()
   } catch (error) {
-    notify.error(error.message || '删除失败')
+    ElMessage.error(error.message || '删除失败')
   } finally {
     deleteTarget.value = null
   }
@@ -267,32 +351,42 @@ const handleCancelDelete = () => {
 // 保存用户
 const handleSave = async () => {
   if (!form.value.username || !form.value.phone) {
-    notify.warning('请填写必填项')
+    ElMessage.warning('请填写必填项')
     return
   }
 
   try {
+    let userId = null
     if (isEdit.value) {
+      // 编辑用户
       await updateUser(selectedUser.value.id, form.value)
-      notify.success('编辑成功')
+      ElMessage.success('编辑成功')
+      userId = selectedUser.value.id
     } else {
+      // 新建用户
       if (!form.value.password) {
-        notify.warning('新用户必须设置密码')
+        ElMessage.warning('新用户必须设置密码')
         return
       }
-      await createUser(form.value)
-      notify.success('创建成功')
+      const res = await createUser(form.value)
+      ElMessage.success('创建成功')
+      // 获取新用户的ID (API返回中找用户ID)
+      if (res.data && res.data.id) {
+        userId = res.data.id
+      } else if (res.data && res.data.data && res.data.data.id) {
+        userId = res.data.data.id
+      }
     }
     
-    // 为用户分配角色
-    if (selectedRoles.value.length > 0) {
-      await assignRolesToUser(selectedUser.value?.id || null, selectedRoles.value)
+    // 为用户分配角色 - 确保userId有效
+    if (selectedRoles.value.length > 0 && userId) {
+      await assignRolesToUser(userId, selectedRoles.value)
     }
     
     closeDialog()
     loadUsers()
   } catch (error) {
-    notify.error(error.message || '操作失败')
+    ElMessage.error(error.message || '操作失败')
   }
 }
 
@@ -312,10 +406,18 @@ const closeDialog = () => {
   }
 }
 
+// 关闭下拉框
+const closeRoleSelector = () => {
+  activeRoleUserId.value = null
+}
+
 onMounted(() => {
   loadUsers()
   loadRoles()
+  // 添加文档点击事件，关闭下拉框
+  document.addEventListener('click', closeRoleSelector)
 })
+
 </script>
 
 <style scoped>
@@ -368,7 +470,7 @@ onMounted(() => {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 20px;
 }
 
@@ -578,33 +680,250 @@ td {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 8px;
+}
+
+.empty-roles {
+  color: #999;
+  font-size: 12px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
 }
 
 .role-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #e8f4f8;
-  color: #0066cc;
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
   font-size: 12px;
-  border: 1px solid #b3d9e6;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .role-tag .remove-btn {
   background: none;
   border: none;
-  color: #ff4444;
+  color: white;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: bold;
   padding: 0;
-  margin-left: 2px;
-  transition: color 0.3s;
+  margin-left: 4px;
+  transition: transform 0.2s;
+  line-height: 1;
 }
 
 .role-tag .remove-btn:hover {
-  color: #cc0000;
+  transform: scale(1.2);
+}
+
+.role-display {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.btn-add-role {
+  padding: 6px 12px;
+  background: white;
+  border: 1px dashed #667eea;
+  color: #667eea;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.3s;
+  align-self: fit-content;
+}
+
+.btn-add-role:hover {
+  background: #f0f5ff;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+/* 角色选择下拉框样式 */
+.role-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.role-selector-wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 250px;
+  z-index: 10;
+}
+
+.role-input-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
+.role-selector-wrapper.active .role-input-box {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+  background: #fafbff;
+}
+
+.role-input-box:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.05);
+}
+
+.role-input-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.placeholder {
+  color: #999;
+  font-size: 13px;
+}
+
+.role-tags-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.role-tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0f5ff;
+  color: #667eea;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-remove {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 0;
+  margin: 0;
+  transition: color 0.2s;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.tag-remove:hover {
+  color: #667eea;
+}
+
+.role-count {
+  color: #667eea;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.dropdown-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #999;
+  font-size: 10px;
+  transition: transform 0.3s, color 0.3s;
+  flex-shrink: 0;
+}
+
+.dropdown-arrow.active {
+  transform: rotate(180deg);
+  color: #667eea;
+}
+
+.role-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 100;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty-message {
+  padding: 16px 12px;
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+}
+
+.dropdown-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 13px;
+  color: #333;
+  border-bottom: 1px solid #f5f5f5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f5f7fa;
+  color: #667eea;
+  padding-left: 16px;
+}
+
+.dropdown-item.selected {
+  background: #f0f5ff;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.checkmark {
+  color: #667eea;
+  font-weight: bold;
+  font-size: 14px;
 }
 </style>
