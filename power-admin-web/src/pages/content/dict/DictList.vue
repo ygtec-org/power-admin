@@ -91,7 +91,6 @@
 <script setup>
 import { ref } from 'vue'
 import { getDicts, createDict, updateDict, deleteDict } from '../../../api/menu'
-import { notify } from '../../../components/Notification'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import Pagination from '../../../components/Pagination.vue'
 
@@ -150,20 +149,19 @@ const handleSearch = () => {
 }
 
 const save = async () => {
-  if(!form.value.key||!form.value.value) {notify.warning('请填写必填项');return}
+  if(!form.value.key||!form.value.value) {alert('请填写必填项');return}
   try {
     if(isEdit.value) {
       await updateDict(selected.value.id, form.value)
-      notify.success('编辑成功')
     } else {
       await createDict(form.value)
-      notify.success('创建成功')
     }
+    // request.ts会全局提示
     showDialog.value = false
     form.value = {key:'',value:'',type:''}
     load()
   } catch (e) {
-    notify.error(e.message || '操作失败')
+    // 错误由request.ts全局处理
   }
 }
 
@@ -182,10 +180,10 @@ const del = async (d) => {
 const handleConfirmDelete = async () => {
   try { 
     await deleteDict(deleteTarget.value.id)
-    notify.success('删除成功')
+    // request.ts会全局提示
     load() 
   } catch(e) {
-    notify.error(e.message || '删除失败')
+    // 错误由request.ts全局处理
   } finally {
     deleteTarget.value = null
   }
