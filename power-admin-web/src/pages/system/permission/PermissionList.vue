@@ -105,7 +105,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getPermissions, createPermission, updatePermission, deletePermission } from '../../../api/permission'
-import { notify } from '../../../components/Notification'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import Pagination from '../../../components/Pagination.vue'
 
@@ -133,7 +132,7 @@ const loadPermissions = async (pageNum = page.value, pageSizeNum = pageSize.valu
     page.value = pageNum
     pageSize.value = pageSizeNum
   } catch (error) {
-    notify.error(error.message || '获取权限列表失败')
+    // 错误由request.ts全局处理
   }
 }
 
@@ -169,10 +168,10 @@ const handleDelete = async (perm) => {
 const handleConfirmDelete = async () => {
   try {
     await deletePermission(deleteTarget.value.id)
-    notify.success('删除成功')
+    // request.ts会全局提示
     loadPermissions()
   } catch (error) {
-    notify.error(error.message || '删除失败')
+    // 错误由request.ts全局处理
   } finally {
     deleteTarget.value = null
   }
@@ -185,22 +184,20 @@ const handleCancelDelete = () => {
 // 保存权限
 const handleSave = async () => {
   if (!form.value.name || !form.value.resource || !form.value.action) {
-    notify.warning('请填写必填项')
+    alert('请填写必填项')
     return
   }
 
   try {
     if (isEdit.value) {
       await updatePermission(selectedPerm.value.id, form.value)
-      notify.success('编辑成功')
     } else {
       await createPermission(form.value)
-      notify.success('创建成功')
     }
     closeDialog()
     loadPermissions()
   } catch (error) {
-    notify.error(error.message || '操作失败')
+    // 错误由request.ts全局处理
   }
 }
 

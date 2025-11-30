@@ -5,9 +5,13 @@ package menu
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
+	"power-admin-server/common/constant"
 	"power-admin-server/internal/svc"
 	"power-admin-server/internal/types"
+	"power-admin-server/pkg/models"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -27,16 +31,66 @@ func NewMenuListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *MenuList
 }
 
 func (l *MenuListLogic) MenuList(req *types.MenuListReq) (resp *types.MenuListResp, err error) {
-	// 计算 offset
-	//offset := (req.Page - 1) * req.PageSize
-
-	// 获取分页菜单数据
-	menus, total, err := l.svcCtx.MenuRepo.All(req.ParentId)
-	if err != nil {
-		return nil, err
+	// 从上下文中获取用户ID
+	userIDStr := l.ctx.Value(constant.AdminUserKey)
+	if userIDStr == nil {
+		return nil, fmt.Errorf("user not authenticated")
 	}
 
-	// 转换为 MenuItem
+	userID, err := strconv.ParseInt(userIDStr.(string), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id")
+	}
+
+	// 获取用户的角色
+	userRoles, err := l.svcCtx.RoleRepo.GetRolesByUserID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user roles: %w", err)
+	}
+
+	// 如果用户没有角色，返回空菜单
+	if len(userRoles) == 0 {
+		resp = &types.MenuListResp{
+			Data:  []types.MenuItem{},
+			Total: 0,
+		}
+		return
+	}
+
+	// 检查是否是超级管理员（role_id = 1）
+	isSuperAdmin := false
+	var menus []models.Menu
+
+	for _, role := range userRoles {
+		if role.ID == 1 {
+			isSuperAdmin = true
+			break
+		}
+	}
+
+	if isSuperAdmin {
+		// 超级管理员返回所有菜单
+		allMenus, _, err := l.svcCtx.MenuRepo.All(0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get all menus: %w", err)
+		}
+		menus = allMenus
+	} else {
+		// 普通用户：提取角色ID列表
+		roleIDs := make([]int64, len(userRoles))
+		for i, role := range userRoles {
+			roleIDs[i] = role.ID
+		}
+
+		// 获取用户角色绑定的菜单
+		var err2 error
+		menus, err2 = l.svcCtx.MenuRepo.GetMenusByRoleIDs(roleIDs)
+		if err2 != nil {
+			return nil, fmt.Errorf("failed to get menus: %w", err2)
+		}
+	}
+
+	// 转换为 MenuItem 并构建树形结构
 	menuMap := make(map[int64]*types.MenuItem)
 	var rootMenus []*types.MenuItem
 
@@ -79,7 +133,7 @@ func (l *MenuListLogic) MenuList(req *types.MenuListReq) (resp *types.MenuListRe
 
 	resp = &types.MenuListResp{
 		Data:  data,
-		Total: total, // 使用真实的总数量
+		Total: int64(len(menus)),
 	}
 	return
 }

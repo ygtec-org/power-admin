@@ -53,3 +53,39 @@ export const toast = {
     ElMessage.info(message)
   },
 }
+
+// 顶部中心消息提示（推荐用于重要提示）
+export const message = {
+  success: (message: string) => {
+    ElMessage({
+      message,
+      type: 'success',
+      duration: 3000,
+      offset: 20,
+    })
+  },
+  error: (message: string) => {
+    ElMessage({
+      message,
+      type: 'error',
+      duration: 4000,
+      offset: 20,
+    })
+  },
+  warning: (message: string) => {
+    ElMessage({
+      message,
+      type: 'warning',
+      duration: 3000,
+      offset: 20,
+    })
+  },
+  info: (message: string) => {
+    ElMessage({
+      message,
+      type: 'info',
+      duration: 3000,
+      offset: 20,
+    })
+  },
+}

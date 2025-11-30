@@ -152,3 +152,15 @@ func (r *MenuRepository) GetMenusTreeByRole(roleID int64, parentID int64) ([]*mo
 
 	return result, nil
 }
+
+// GetMenusByRoleIDs 根据角色ID列表获取菜单（去重）
+func (r *MenuRepository) GetMenusByRoleIDs(roleIDs []int64) ([]models.Menu, error) {
+	var menus []models.Menu
+	// 使用DISTINCT来避免重复，因为多个角色可能绑定了同一个菜单
+	err := r.db.Distinct("menus.*").
+		Joins("LEFT JOIN role_menus ON role_menus.menu_id = menus.id").
+		Where("role_menus.role_id IN ? AND menus.status = 1", roleIDs).
+		Order("menus.sort").
+		Find(&menus).Error
+	return menus, err
+}

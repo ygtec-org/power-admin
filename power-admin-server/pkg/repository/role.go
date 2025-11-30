@@ -127,3 +127,12 @@ func (r *RoleRepository) RemoveMenu(roleID, menuID int64) error {
 func (r *RoleRepository) RemoveAllMenus(roleID int64) error {
 	return r.db.Model(&models.Role{}).Where("id = ?", roleID).Association("Menus").Clear()
 }
+
+// GetRolesByUserID 根据用户ID获取上所有角色
+func (r *RoleRepository) GetRolesByUserID(userID int64) ([]models.Role, error) {
+	var roles []models.Role
+	err := r.db.Joins("LEFT JOIN user_roles ON user_roles.role_id = roles.id").
+		Where("user_roles.user_id = ? AND roles.status = 1", userID).
+		Find(&roles).Error
+	return roles, err
+}

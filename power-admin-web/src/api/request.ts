@@ -1,6 +1,6 @@
 import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { notify } from '../components/Notification'
+import { ElMessage } from 'element-plus'
 
 const instance: AxiosInstance = axios.create({
   baseURL: '/api/admin',
@@ -39,7 +39,12 @@ instance.interceptors.response.use(
         isRedirecting = true
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-        notify.error(msg || '登录已过期', '未授权')
+        ElMessage({
+          message: msg || '登录已过期，请重新登录',
+          type: 'error',
+          duration: 4000,
+          offset: 20,
+        })
         // 延迟跳转，给用户时间看到提示
         setTimeout(() => {
           window.location.href = '/login'
@@ -48,15 +53,20 @@ instance.interceptors.response.use(
       }
       return Promise.reject(new Error(msg || '登录已过期'))
     } else if (code === 403) {
-      // 403: 无权限，只提示错误，不跳转
-      notify.error(msg || '无权限访问', '权限不足')
-      return Promise.reject(new Error(msg || '无权限访问'))
+      // 403: 无权限，显示顶部提示
+      ElMessage({
+        message: msg || '无权限,请联系管理员开通',
+        type: 'error',
+        duration: 4000,
+        offset: 20,
+      })
+      return Promise.reject(new Error(msg || '无权限,请联系管理员开通'))
     } else {
       return Promise.reject(new Error(msg || '请求失败'))
     }
   },
   (error) => {
-    let message = '请求失败'
+    let errorMsg = '请求失败'
     if (error.response) {
       if (error.response.status === 401) {
         // 401: 未授权，跳转登录
@@ -64,28 +74,39 @@ instance.interceptors.response.use(
           isRedirecting = true
           localStorage.removeItem('token')
           localStorage.removeItem('user')
-          notify.error('登录已过期，请重新登录', '未授权')
+          ElMessage({
+            message: '登录已过期，请重新登录',
+            type: 'error',
+            duration: 4000,
+            offset: 20,
+          })
           setTimeout(() => {
             window.location.href = '/login'
             isRedirecting = false
           }, 1500)
         }
-        message = '登录已过期'
+        errorMsg = '登录已过期'
       } else if (error.response.status === 403) {
-        // 403: 无权限，只提示错误，不跳转
-        message = error.response.data?.msg || '无权限访问'
-        notify.error(message, '权限不足')
+        // 403: 无权限，显示顶部提示
+        const msg403 = error.response.data?.msg || '无权限,请联系管理员开通'
+        ElMessage({
+          message: msg403,
+          type: 'error',
+          duration: 4000,
+          offset: 20,
+        })
+        return Promise.reject(new Error(msg403))
       } else if (error.response.status === 404) {
-        message = '请求的资源不存在'
+        errorMsg = '请求的资源不存在'
       } else if (error.response.status === 500) {
-        message = '服务器错误'
+        errorMsg = '服务器错误'
       } else {
-        message = error.response.data?.msg || `HTTP ${error.response.status}`
+        errorMsg = error.response.data?.msg || `HTTP ${error.response.status}`
       }
     } else if (error.request) {
-      message = '网络错误，请检查连接'
+      errorMsg = '网络错误，请检查连接'
     }
-    return Promise.reject(new Error(message))
+    return Promise.reject(new Error(errorMsg))
   }
 )
 

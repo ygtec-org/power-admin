@@ -127,7 +127,7 @@
 import { ref, onMounted } from 'vue'
 import { getUsers, createUser, updateUser, deleteUser, assignRolesToUser, getUserRoles } from '../../../api/user'
 import { getRoles } from '../../../api/role'
-import { notify } from '../../../components/Notification'
+import { ElMessage } from 'element-plus'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import Pagination from '../../../components/Pagination.vue'
 

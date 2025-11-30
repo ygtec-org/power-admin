@@ -54,7 +54,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { notify } from '../../components/Notification'
+import { ElMessage } from 'element-plus'
 import { getApps, getAppsByCategory, searchApps } from '@/api/appmarket'
 
 const apps = ref([])
@@ -120,7 +120,7 @@ const viewAppDetail = (appId) => {
 }
 
 const installApp = (appId) => {
-  notify.info('应用安装功能开发中...', '提示')
+  ElMessage.info('应用安装功能开发中...')
 }
 
 onMounted(() => {

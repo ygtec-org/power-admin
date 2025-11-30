@@ -41,7 +41,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '../api/user'
-import { notify } from '../components/Notification'
 
 const router = useRouter()
 const form = ref({
@@ -53,7 +52,9 @@ const loading = ref(false)
 
 const handleLogin = async () => {
   if (!form.value.phone || !form.value.password) {
-    notify.warning('请输入手机号和密码')
+    // 输入验证提示
+    const msg = !form.value.phone ? '请输入手机号' : '请输入密码'
+    alert(msg)
     return
   }
 
@@ -75,13 +76,12 @@ const handleLogin = async () => {
       avatar: response.data.avatar,
     }))
 
-    notify.success('登录成功')
-    // 重定向到首页
+    // 登录成功后自动跳转（request.ts会显示全局提示）
     setTimeout(() => {
       router.push('/dashboard')
     }, 500)
   } catch (err: any) {
-    notify.error(err.message || '登录失败')
+    // 错误提示由request.ts全局处理
     error.value = err.message || '登录失败'
   } finally {
     loading.value = false

@@ -138,7 +138,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { getMenuTree, createMenu, updateMenu, deleteMenu } from '../../../api/menu'
-import { notify } from '../../../components/Notification'
 import MenuTreeNode from './MenuTreeNode.vue'
 import { Icon } from '@iconify/vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
@@ -251,10 +250,10 @@ const handleDelete = async (menu) => {
 const handleConfirmDelete = async () => {
   try {
     await deleteMenu(deleteTarget.value.id)
-    notify.success('删除成功')
+    // 可以去掉提示，request.ts会全局显示
     loadMenus()
   } catch (error) {
-    notify.error(error.message || '删除失败')
+    // 错误由request.ts全局处理
   } finally {
     deleteTarget.value = null
   }
@@ -266,21 +265,20 @@ const handleCancelDelete = () => {
 
 const handleSave = async () => {
   if (!form.value.menu_name || !form.value.menu_path) {
-    notify.warning('请填写菜单名称和菜单路径')
+    alert('请填写菜单名称和菜单路径')
     return
   }
   try {
     if (isEdit.value) {
       await updateMenu(selectedMenu.value.id, form.value)
-      notify.success('编辑成功')
     } else {
       await createMenu(form.value)
-      notify.success('创建成功')
     }
+    // request.ts会全局提示成功或失败
     closeDialog()
     loadMenus()
   } catch (error) {
-    notify.error(error.message || '操作失败')
+    // 错误由request.ts全局处理
   }
 }
 
