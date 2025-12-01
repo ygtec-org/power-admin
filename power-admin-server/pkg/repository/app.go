@@ -3,154 +3,162 @@ package repository
 import (
 	"power-admin-server/pkg/models"
 
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"gorm.io/gorm"
 )
 
-// AppRepository 应用仓储
-type AppRepository struct {
-	db *gorm.DB
+type AppRepository interface {
+	// 获取应用列表
+	GetAppList(page, pageSize int, category string) ([]models.App, int64, error)
+	// 按应用标识获取应用
+	GetAppByKey(appKey string) (*models.App, error)
+	// 按ID获取应用
+	GetAppByID(id int64) (*models.App, error)
+	// 创建应用
+	CreateApp(app *models.App) error
+	// 更新应用
+	UpdateApp(app *models.App) error
+	// 删除应用
+	DeleteApp(id int64) error
+	// 搜索应用
+	SearchApps(keyword string, page, pageSize int) ([]models.App, int64, error)
+
+	// 应用安装相关
+	// 检查应用是否已安装
+	IsAppInstalled(appKey string) (bool, error)
+	// 获取已安装应用列表
+	GetInstalledApps() ([]models.AppInstallation, error)
+	// 安装应用
+	InstallApp(installation *models.AppInstallation) error
+	// 卸载应用
+	UninstallApp(appKey string) error
+	// 获取应用安装记录
+	GetAppInstallation(appKey string) (*models.AppInstallation, error)
 }
 
-// NewAppRepository 创建应用仓储
-func NewAppRepository(db *gorm.DB) *AppRepository {
-	return &AppRepository{db: db}
+type AppRepositoryImpl struct {
+	conn sqlx.SqlConn
+	db   *gorm.DB
 }
 
-// Create 创建应用
-func (r *AppRepository) Create(app *models.App) error {
+func NewAppRepository(db *gorm.DB) AppRepository {
+	return &AppRepositoryImpl{
+		db: db,
+	}
+}
+
+// GetAppList 获取应用列表
+func (r *AppRepositoryImpl) GetAppList(page, pageSize int, category string) ([]models.App, int64, error) {
+	var apps []models.App
+	var total int64
+
+	query := r.db.Where("status = ?", 1)
+	if category != "" {
+		query = query.Where("category = ?", category)
+	}
+
+	// 获取总数
+	if err := query.Model(&models.App{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 获取分页数据
+	offset := (page - 1) * pageSize
+	if err := query.Offset(offset).Limit(pageSize).Find(&apps).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return apps, total, nil
+}
+
+// GetAppByKey 按应用标识获取应用
+func (r *AppRepositoryImpl) GetAppByKey(appKey string) (*models.App, error) {
+	var app models.App
+	if err := r.db.Where("app_key = ?", appKey).First(&app).Error; err != nil {
+		return nil, err
+	}
+	return &app, nil
+}
+
+// GetAppByID 按ID获取应用
+func (r *AppRepositoryImpl) GetAppByID(id int64) (*models.App, error) {
+	var app models.App
+	if err := r.db.Where("id = ?", id).First(&app).Error; err != nil {
+		return nil, err
+	}
+	return &app, nil
+}
+
+// CreateApp 创建应用
+func (r *AppRepositoryImpl) CreateApp(app *models.App) error {
 	return r.db.Create(app).Error
 }
 
-// Update 更新应用
-func (r *AppRepository) Update(app *models.App) error {
-	return r.db.Model(app).Updates(app).Error
+// UpdateApp 更新应用
+func (r *AppRepositoryImpl) UpdateApp(app *models.App) error {
+	return r.db.Save(app).Error
 }
 
-// Delete 删除应用
-func (r *AppRepository) Delete(id int64) error {
-	return r.db.Where("id = ?", id).Delete(&models.App{}).Error
+// DeleteApp 删除应用
+func (r *AppRepositoryImpl) DeleteApp(id int64) error {
+	return r.db.Delete(&models.App{}, id).Error
 }
 
-// GetByID 根据ID获取应用
-func (r *AppRepository) GetByID(id int64) (*models.App, error) {
-	var app models.App
-	err := r.db.Where("id = ?", id).First(&app).Error
-	if err != nil {
-		return nil, err
-	}
-	return &app, nil
-}
-
-// GetByAppKey 根据AppKey获取应用
-func (r *AppRepository) GetByAppKey(appKey string) (*models.App, error) {
-	var app models.App
-	err := r.db.Where("app_key = ?", appKey).First(&app).Error
-	if err != nil {
-		return nil, err
-	}
-	return &app, nil
-}
-
-// List 获取应用列表
-func (r *AppRepository) List(offset, limit int) ([]models.App, int64, error) {
+// SearchApps 搜索应用
+func (r *AppRepositoryImpl) SearchApps(keyword string, page, pageSize int) ([]models.App, int64, error) {
 	var apps []models.App
 	var total int64
 
-	err := r.db.Model(&models.App{}).Count(&total).Error
-	if err != nil {
+	query := r.db.Where("status = ? AND (app_name LIKE ? OR description LIKE ?)", 1, "%"+keyword+"%", "%"+keyword+"%")
+
+	// 获取总数
+	if err := query.Model(&models.App{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	err = r.db.Offset(offset).Limit(limit).Where("published = 1").Order("created_at DESC").Find(&apps).Error
-	if err != nil {
+	// 获取分页数据
+	offset := (page - 1) * pageSize
+	if err := query.Offset(offset).Limit(pageSize).Find(&apps).Error; err != nil {
 		return nil, 0, err
 	}
 
 	return apps, total, nil
 }
 
-// ListByCategory 根据分类获取应用列表
-func (r *AppRepository) ListByCategory(category string, offset, limit int) ([]models.App, int64, error) {
-	var apps []models.App
-	var total int64
-
-	err := r.db.Model(&models.App{}).Where("category = ? AND published = 1", category).Count(&total).Error
-	if err != nil {
-		return nil, 0, err
+// IsAppInstalled 检查应用是否已安装
+func (r *AppRepositoryImpl) IsAppInstalled(appKey string) (bool, error) {
+	var count int64
+	if err := r.db.Model(&models.AppInstallation{}).Where("app_key = ? AND status = ?", appKey, 1).Count(&count).Error; err != nil {
+		return false, err
 	}
-
-	err = r.db.Where("category = ? AND published = 1", category).Offset(offset).Limit(limit).Order("created_at DESC").Find(&apps).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return apps, total, nil
+	return count > 0, nil
 }
 
-// Search 搜索应用
-func (r *AppRepository) Search(keyword string, offset, limit int) ([]models.App, int64, error) {
-	var apps []models.App
-	var total int64
-
-	query := r.db.Where("published = 1 AND (app_name LIKE ? OR description LIKE ?)", "%"+keyword+"%", "%"+keyword+"%")
-
-	err := query.Model(&models.App{}).Count(&total).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	err = query.Offset(offset).Limit(limit).Order("downloads DESC").Find(&apps).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return apps, total, nil
-}
-
-// ReviewRepository 评价仓储
-type ReviewRepository struct {
-	db *gorm.DB
-}
-
-// NewReviewRepository 创建评价仓储
-func NewReviewRepository(db *gorm.DB) *ReviewRepository {
-	return &ReviewRepository{db: db}
-}
-
-// Create 创建评价
-func (r *ReviewRepository) Create(review *models.Review) error {
-	return r.db.Create(review).Error
-}
-
-// Delete 删除评价
-func (r *ReviewRepository) Delete(id int64) error {
-	return r.db.Where("id = ?", id).Delete(&models.Review{}).Error
-}
-
-// GetByID 根据ID获取评价
-func (r *ReviewRepository) GetByID(id int64) (*models.Review, error) {
-	var review models.Review
-	err := r.db.Where("id = ?", id).First(&review).Error
-	if err != nil {
+// GetInstalledApps 获取已安装应用列表
+func (r *AppRepositoryImpl) GetInstalledApps() ([]models.AppInstallation, error) {
+	var installations []models.AppInstallation
+	if err := r.db.Where("status = ?", 1).Find(&installations).Error; err != nil {
 		return nil, err
 	}
-	return &review, nil
+	return installations, nil
 }
 
-// ListByAppID 根据AppID获取评价列表
-func (r *ReviewRepository) ListByAppID(appID int64, offset, limit int) ([]models.Review, int64, error) {
-	var reviews []models.Review
-	var total int64
+// InstallApp 安装应用
+func (r *AppRepositoryImpl) InstallApp(installation *models.AppInstallation) error {
+	installation.Status = 1
+	return r.db.Create(installation).Error
+}
 
-	err := r.db.Model(&models.Review{}).Where("app_id = ?", appID).Count(&total).Error
-	if err != nil {
-		return nil, 0, err
+// UninstallApp 卸载应用
+func (r *AppRepositoryImpl) UninstallApp(appKey string) error {
+	return r.db.Model(&models.AppInstallation{}).Where("app_key = ?", appKey).Update("status", 0).Error
+}
+
+// GetAppInstallation 获取应用安装记录
+func (r *AppRepositoryImpl) GetAppInstallation(appKey string) (*models.AppInstallation, error) {
+	var installation models.AppInstallation
+	if err := r.db.Where("app_key = ?", appKey).First(&installation).Error; err != nil {
+		return nil, err
 	}
-
-	err = r.db.Where("app_id = ?", appID).Offset(offset).Limit(limit).Order("created_at DESC").Find(&reviews).Error
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return reviews, total, nil
+	return &installation, nil
 }

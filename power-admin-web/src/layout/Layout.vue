@@ -17,27 +17,8 @@
             <span>📊 仪表板</span>
           </RouterLink>
 
-          <!-- 动态可折叠树形菜单 -->
-          <template v-for="menu in menus" :key="menu.id">
-            <div class="menu-group" v-if="menu.children && menu.children.length > 0">
-              <div class="menu-parent" @click="toggleMenu(menu.id)">
-                <span class="menu-icon">{{ expandedMenus.has(menu.id) ? '▼' : '▶' }}</span>
-                <span>{{ getMenuIcon(menu.icon) }} {{ menu.menuName }}</span>
-              </div>
-              <transition name="slide">
-                <div v-show="expandedMenus.has(menu.id)" class="menu-children">
-                  <template v-for="child in menu.children" :key="child.id">
-                    <RouterLink :to="child.menuPath" class="menu-item menu-child">
-                      <span>{{ getMenuIcon(child.icon) }} {{ child.menuName }}</span>
-                    </RouterLink>
-                  </template>
-                </div>
-              </transition>
-            </div>
-            <RouterLink v-else :to="menu.menuPath" class="menu-item">
-              <span>{{ getMenuIcon(menu.icon) }} {{ menu.menuName }}</span>
-            </RouterLink>
-          </template>
+          <!-- 递归树形菜单 -->
+          <MenuTree :menus="menus.length > 0 ? menus : defaultMenus" :expanded-menus="expandedMenus" @toggle="toggleMenu" />
         </nav>
       </aside>
 
@@ -53,10 +34,12 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { RouterLink, RouterView } from 'vue-router'
 import { getMenuTree } from '../api/menu'
+import MenuTree from './MenuTree.vue'
 
 const router = useRouter()
 const userName = ref('Admin')
 const menus = ref([])
+const defaultMenus = ref([])
 const expandedMenus = ref(new Set()) // 记录展开的菜单ID
 
 // 切换菜单展开/收起
@@ -70,62 +53,109 @@ const toggleMenu = (menuId) => {
   expandedMenus.value = new Set(expandedMenus.value)
 }
 
+// 递归构建树形菜单（兼容 parent_id 和 parentId 两种字段名）
+const buildMenuTree = (menuList, parentId = 0) => {
+  const result = []
+  menuList.forEach(menu => {
+    const pId = menu.parent_id !== undefined ? menu.parent_id : menu.parentId
+    if (pId === parentId) {
+      const children = buildMenuTree(menuList, menu.id)
+      const menuItem = {
+        ...menu,
+        parent_id: pId,
+        parentId: pId,
+        children: children.length > 0 ? children : []
+      }
+      result.push(menuItem)
+    }
+  })
+  return result
+}
+
 // 获取菜单数据
 const loadMenus = async () => {
   try {
     const res = await getMenuTree()
-    // 后端返回格式: { data: { total, data: [...] } }
-    // 响应拦截器提取后: { data: { total, data: [...] } }
-    let menuList = res.data.list || res.data || []
+    console.log('原始菜单响应:', res)
     
-    // 添加 CMS 内容系统菜单
-    const cmsMenu = {
-      id: 'cms-system',
-      menuName: 'CMS内容系统',
-      menuPath: '#',
-      icon: 'document',
-      children: [
-        { id: 'cms-content', menuName: '内容管理', menuPath: '/cms/content', icon: 'document' },
-        { id: 'cms-category', menuName: '分类管理', menuPath: '/cms/category', icon: 'list' },
-        { id: 'cms-tag', menuName: '标签管理', menuPath: '/cms/tag', icon: 'list' },
-        { id: 'cms-comment', menuName: '评论管理', menuPath: '/cms/comment', icon: 'document' },
-        { id: 'cms-user', menuName: '用户管理', menuPath: '/cms/user', icon: 'user' },
-        { id: 'cms-publish', menuName: '发布管理', menuPath: '/cms/publish', icon: 'link' },
-      ]
+    // 处理多种可能的响应格式
+    let menuList = []
+    if (res.data) {
+      if (Array.isArray(res.data)) {
+        menuList = res.data
+      } else if (res.data.list) {
+        menuList = res.data.list
+      } else if (res.data.data) {
+        menuList = res.data.data
+      }
+    } else if (Array.isArray(res)) {
+      menuList = res
     }
     
-    menuList.push(cmsMenu)
+    // 过滤出真正的菜单项（排除应用市场等可能混入的非菜单数据）
+    menuList = menuList.filter(item => 
+      item.menu_name || item.menuName || item.menu_path || item.menuPath
+    )
+    
+    console.log('过滤后的菜单列表:', menuList)
+    
+    if (menuList.length === 0) {
+      loadDefaultMenus()
+      return
+    }
+    
+    // 直接使用 API 返回的菜单（后端已经构建好树形结构）
     menus.value = menuList
-    console.log('加载的菜单数据:', menus.value)
+    console.log('最终菜单树:', menus.value)
   } catch (error) {
     console.error('获取菜单失败:', error)
+    // 加载失败时使用默认菜单
+    loadDefaultMenus()
   }
 }
 
-// 根据图标名称返回 emoji
-const getMenuIcon = (icon) => {
-  const iconMap = {
-    'setting': '⚙️',
-    'user': '👤',
-    'admin': '🎯',
-    'menu': '📋',
-    'lock': '🔐',
-    'link': '🔗',
-    'document': '📄',
-    'list': '📚',
-    'shopping': '🛍️',
-    'shop': '🛑',
-    'monitor': '📊'
-  }
-  return iconMap[icon] || '📌'
+// 默认菜单（当API失败时使用）
+const loadDefaultMenus = () => {
+  const defaultMenuList = [
+    {
+      id: 1,
+      menu_name: '系统管理',
+      menuName: '系统管理',
+      menu_path: '/system',
+      menuPath: '/system',
+      icon: 'admin',
+      parent_id: 0,
+    },
+    { id: 2, menu_name: '用户管理', menuName: '用户管理', menu_path: '/system/users', menuPath: '/system/users', icon: 'user', parent_id: 1 },
+    { id: 3, menu_name: '角色管理', menuName: '角色管理', menu_path: '/system/roles', menuPath: '/system/roles', icon: 'admin', parent_id: 1 },
+    {
+      id: 9,
+      menu_name: '应用中心',
+      menuName: '应用中心',
+      menu_path: '/market',
+      menuPath: '/market',
+      icon: 'shopping',
+      parent_id: 0,
+    },
+    { id: 10, menu_name: '应用市场', menuName: '应用市场', menu_path: '/market/apps', menuPath: '/market/apps', icon: 'shop', parent_id: 9 }
+  ]
+  // 使用树形构建函数统一处理
+  const treeMenus = buildMenuTree(defaultMenuList)
+  defaultMenus.value = treeMenus
+  menus.value = treeMenus
+  console.log('使用默认菜单，树形结构:', menus.value)
 }
 
 onMounted(() => {
+  // 先加载默认菜单，确保菜单一定会显示
+  loadDefaultMenus()
+  
   const user = localStorage.getItem('user')
   if (user) {
     const userData = JSON.parse(user)
     userName.value = userData.nickname || 'Admin'
   }
+  // 然后尝试从 API 加载菜单
   loadMenus()
 })
 

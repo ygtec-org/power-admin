@@ -25,6 +25,65 @@ type ApiListResp struct {
 	ApiInfos []ApiInfo `json:"list"`
 }
 
+type AppInfo struct {
+	Id          int64   `json:"id"`
+	AppKey      string  `json:"appKey"`
+	AppName     string  `json:"appName"`
+	Version     string  `json:"version"`
+	Author      string  `json:"author"`
+	Description string  `json:"description"`
+	Icon        string  `json:"icon"`
+	DownloadUrl string  `json:"downloadUrl"`
+	DemoUrl     string  `json:"demoUrl"`
+	Category    string  `json:"category"`
+	Tags        string  `json:"tags"`
+	Rating      float64 `json:"rating"`
+	Downloads   int64   `json:"downloads"`
+	Status      int     `json:"status"`
+	Published   int     `json:"published"`
+	Installed   bool    `json:"installed"`
+	CreatedAt   string  `json:"createdAt"`
+}
+
+type AppInstallReq struct {
+	AppId  int64  `form:"appId"`
+	AppKey string `form:"appKey"`
+}
+
+type AppInstallResp struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+type AppInstallStatusReq struct {
+	AppKey string `form:"appKey"`
+}
+
+type AppInstallStatusResp struct {
+	AppKey    string `json:"appKey"`
+	Installed bool   `json:"installed"`
+}
+
+type AppListReq struct {
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"pageSize,default=10"`
+	Category string `form:"category,optional"`
+}
+
+type AppListResp struct {
+	Total int64     `json:"total"`
+	List  []AppInfo `json:"list"`
+}
+
+type AppUninstallReq struct {
+	AppKey string `form:"appKey"`
+}
+
+type AppUninstallResp struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
 type AssignPermissionsReq struct {
 	RoleID        int64   `json:"roleId" path:"id"`
 	PermissionIds []int64 `json:"permissionIds"`
@@ -47,7 +106,7 @@ type AssignRoleMenuAndApiResp struct {
 }
 
 type AssignRolesToUserReq struct {
-	UserID  int64   `json:"userId"`
+	UserID  int64   `json:"userId" path:"id"`
 	RoleIds []int64 `json:"roleIds"`
 }
 

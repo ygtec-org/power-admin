@@ -19,28 +19,59 @@
       </select>
     </div>
 
-    <div class="app-grid" v-if="apps.length > 0">
-      <div class="app-card" v-for="app in apps" :key="app.id" @click="viewAppDetail(app.id)">
-        <div class="app-icon">
-          <img :src="app.icon || '/default-app-icon.png'" :alt="app.appName" />
-        </div>
-        <div class="app-info">
-          <h3>{{ app.appName }}</h3>
-          <p class="version">v{{ app.version }}</p>
-          <p class="description">{{ app.description }}</p>
-          <div class="app-meta">
-            <span class="rating">⭐ {{ app.rating || 0 }}</span>
-            <span class="downloads">📥 {{ app.downloads || 0 }}</span>
+    <!-- 已安装应用 -->
+    <div class="app-section" v-if="installedApps.length > 0">
+      <h2 class="section-title">已安装应用</h2>
+      <div class="app-grid">
+        <div class="app-card" v-for="app in installedApps" :key="app.id" @click="viewAppDetail(app.id)">
+          <div class="app-icon">
+            <img :src="app.icon || '/default-app-icon.png'" :alt="app.appName" />
           </div>
-          <div class="app-actions">
-            <button @click.stop="installApp(app.id)" class="install-btn">安装</button>
-            <a v-if="app.demoUrl" :href="app.demoUrl" target="_blank" class="demo-btn">演示</a>
+          <div class="app-info">
+            <h3>{{ app.appName }}</h3>
+            <p class="version">v{{ app.version }}</p>
+            <p class="description">{{ app.description }}</p>
+            <div class="app-meta">
+              <span class="rating">⭐ {{ app.rating || 0 }}</span>
+              <span class="downloads">📥 {{ app.downloads || 0 }}</span>
+            </div>
+            <div class="app-actions">
+              <button @click.stop="uninstallApp(app.appKey)" class="uninstall-btn">卸载</button>
+              <a v-if="app.demoUrl" :href="app.demoUrl" target="_blank" class="demo-btn">演示</a>
+            </div>
+            <div class="status-badge installed">已安装</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="no-data" v-else>
+    <!-- 未安装应用 -->
+    <div class="app-section" v-if="uninstalledApps.length > 0">
+      <h2 class="section-title">未安装应用</h2>
+      <div class="app-grid">
+        <div class="app-card" v-for="app in uninstalledApps" :key="app.id" @click="viewAppDetail(app.id)">
+          <div class="app-icon">
+            <img :src="app.icon || '/default-app-icon.png'" :alt="app.appName" />
+          </div>
+          <div class="app-info">
+            <h3>{{ app.appName }}</h3>
+            <p class="version">v{{ app.version }}</p>
+            <p class="description">{{ app.description }}</p>
+            <div class="app-meta">
+              <span class="rating">⭐ {{ app.rating || 0 }}</span>
+              <span class="downloads">📥 {{ app.downloads || 0 }}</span>
+            </div>
+            <div class="app-actions">
+              <button @click.stop="installApp(app.id, app.appKey)" class="install-btn">安装</button>
+              <a v-if="app.demoUrl" :href="app.demoUrl" target="_blank" class="demo-btn">演示</a>
+            </div>
+            <div class="status-badge uninstalled">未安装</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="no-data" v-if="apps.length === 0">
       <p>未找到相关应用</p>
     </div>
 
@@ -53,11 +84,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getApps, getAppsByCategory, searchApps } from '@/api/appmarket'
+import { getApps, getAppsByCategory, searchApps, installApp as apiInstallApp, uninstallApp as apiUninstallApp } from '@/api/appmarket'
 
 const apps = ref([])
+const installedApps = computed(() => apps.value.filter(app => app.installed))
+const uninstalledApps = computed(() => apps.value.filter(app => !app.installed))
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(12)
@@ -80,12 +113,19 @@ const loadApps = async () => {
       res = await getApps(params)
     }
 
-    if (res && res.data) {
-      apps.value = res.data.list || []
-      total.value = res.data.total || 0
+    // API直接返回 data 对象（包含 list 和 total 字段）
+    if (res && res.data.list) {
+      apps.value = res.data.list
+      total.value = res.total || 0
+      console.log('加载应用成功:', apps.value)
+    } else {
+      console.warn('意料的响应格式:', res)
+      apps.value = []
+      total.value = 0
     }
   } catch (error) {
-    console.error('Failed to load apps:', error)
+    console.error('加载应用列表失败:', error)
+    ElMessage.error('加载应用列表失败')
   }
 }
 
@@ -115,12 +155,35 @@ const nextPage = () => {
 }
 
 const viewAppDetail = (appId) => {
-  // 可以实现详情页面或弹窗
   console.log('View app detail:', appId)
 }
 
-const installApp = (appId) => {
-  ElMessage.info('应用安装功能开发中...')
+const installApp = async (appId, appKey) => {
+  try {
+    const res = await apiInstallApp(appId, appKey)
+    if (res.data && res.data.success) {
+      ElMessage.success(res.data.message || '应用安装成功')
+      await loadApps() // 安装后刷新列表
+    } else {
+      ElMessage.error(res.data?.message || '应用安装失败')
+    }
+  } catch (error) {
+    ElMessage.error('应用安装失败: ' + (error.message || ''))
+  }
+}
+
+const uninstallApp = async (appKey) => {
+  try {
+    const res = await apiUninstallApp(appKey)
+    if (res.data && res.data.success) {
+      ElMessage.success(res.data.message || '应用卸载成功')
+      await loadApps() // 卸载后刷新列表
+    } else {
+      ElMessage.error(res.data?.message || '应用卸载失败')
+    }
+  } catch (error) {
+    ElMessage.error('应用卸载失败: ' + (error.message || ''))
+  }
 }
 
 onMounted(() => {
@@ -156,6 +219,7 @@ onMounted(() => {
 
 .search-btn,
 .install-btn,
+.uninstall-btn,
 .demo-btn {
   padding: 8px 16px;
   background-color: #409eff;
@@ -172,6 +236,14 @@ onMounted(() => {
   background-color: #66b1ff;
 }
 
+.uninstall-btn {
+  background-color: #f56c6c;
+}
+
+.uninstall-btn:hover {
+  background-color: #f78989;
+}
+
 .category-select {
   padding: 8px 12px;
   border: 1px solid #ddd;
@@ -179,6 +251,20 @@ onMounted(() => {
   background-color: white;
   font-size: 14px;
   cursor: pointer;
+}
+
+/* 应用分类段 */
+.app-section {
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #409eff;
 }
 
 .app-grid {
@@ -194,6 +280,7 @@ onMounted(() => {
   padding: 16px;
   cursor: pointer;
   transition: box-shadow 0.3s;
+  position: relative;
 }
 
 .app-card:hover {
@@ -256,6 +343,7 @@ onMounted(() => {
 }
 
 .install-btn,
+.uninstall-btn,
 .demo-btn {
   flex: 1;
   padding: 6px 12px;
@@ -273,6 +361,26 @@ onMounted(() => {
 
 .demo-btn:hover {
   background-color: #85ce61;
+}
+
+/* 状态休闯 */
+.status-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+}
+
+.status-badge.installed {
+  background-color: #67c23a;
+}
+
+.status-badge.uninstalled {
+  background-color: #909399;
 }
 
 .no-data {

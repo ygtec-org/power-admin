@@ -1,174 +1,153 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"log"
 
-	"power-admin-server/internal/config"
-	"power-admin-server/pkg/db"
 	"power-admin-server/pkg/models"
 
-	"github.com/zeromicro/go-zero/core/conf"
-	"golang.org/x/crypto/bcrypt"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 func main() {
-	configFile := flag.String("f", "etc/power-api.yaml", "the config file")
-	flag.Parse()
+	// MySQL 连接字符串
+	dsn := "root:root@tcp(127.0.0.1:3306)/power_admin?charset=utf8mb4&parseTime=True&loc=Local"
 
-	var c config.Config
-	conf.MustLoad(*configFile, &c)
-
-	// 初始化数据库
-	database, err := db.InitDB(c.Mysql.DataSource)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to init database: %v", err)
+		panic("Failed to connect to database: " + err.Error())
 	}
 
-	// 删除旧表并重新创建（带正确的中文注释）
-	if err := recreateTables(database); err != nil {
-		log.Fatalf("Failed to recreate tables: %v", err)
-	}
+	fmt.Println("✓ 数据库连接成功")
 
-	// 插入数据
-	if err := seedDatabase(database); err != nil {
-		log.Fatalf("Failed to seed database: %v", err)
-	}
-
-	log.Println("✓ 所有数据初始化成功！")
-}
-
-func recreateTables(database *gorm.DB) error {
-	log.Println("正在重新创建表...")
-
-	// 重新创建所有表（GORM会根据模型的comment标签自动创建中文注释）
-	// 也会自动处理多对多的关联表
-	if err := database.AutoMigrate(
-		&models.User{},
-		&models.Role{},
-		&models.Permission{},
-		&models.Menu{},
-		&models.Dictionary{},
-		&models.API{},
-		&models.Plugin{},
-		&models.Log{},
+	// 创建表
+	err = db.AutoMigrate(
 		&models.App{},
-		&models.Review{},
-	); err != nil {
-		return fmt.Errorf("failed to recreate tables: %w", err)
+		&models.AppInstallation{},
+	)
+	if err != nil {
+		panic("Failed to auto migrate: " + err.Error())
 	}
 
-	log.Println("✓ 表创建成功（含中文注释）")
-	return nil
-}
+	fmt.Println("✓ 表结构已创建")
 
-func seedDatabase(database *gorm.DB) error {
-	// 生成密码哈希 (密码: 123456)
-	passwordHash, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
-	passwordHashStr := string(passwordHash)
+	// 清空旧数据
+	db.Exec("DELETE FROM apps")
+	db.Exec("DELETE FROM app_installations")
 
-	// 插入用户
-	users := []models.User{
+	// 插入应用数据（使用稳定的 placeholder 图片）
+	apps := []models.App{
 		{
-			Username: "admin",
-			Password: passwordHashStr,
-			Nickname: "管理员",
-			Email:    "admin@example.com",
-			Phone:    "13800000000",
-			Status:   1,
+			AppKey:      "power-cms",
+			AppName:     "CMS内容系统",
+			Version:     "1.0.0",
+			Author:      "Power Admin Team",
+			Description: "完整的内容管理系统，支持文章、分类、标签、评论管理，适合博客和内容运营",
+			Icon:        "https://picsum.photos/300/200?random=1",
+			Category:    "content",
+			Tags:        "内容管理,博客",
+			Rating:      4.8,
+			Downloads:   1250,
+			Status:      1,
+			Published:   1,
 		},
 		{
-			Username: "editor",
-			Password: passwordHashStr,
-			Nickname: "编辑",
-			Email:    "editor@example.com",
-			Phone:    "13800000001",
-			Status:   1,
+			AppKey:      "shop",
+			AppName:     "电商系统",
+			Version:     "2.0.0",
+			Author:      "Power Admin Team",
+			Description: "功能完整的电商平台，包含商品管理、订单、支付、物流跟踪等功能",
+			Icon:        "https://picsum.photos/300/200?random=2",
+			Category:    "business",
+			Tags:        "电商,商城",
+			Rating:      4.6,
+			Downloads:   980,
+			Status:      1,
+			Published:   1,
 		},
 		{
-			Username: "user",
-			Password: passwordHashStr,
-			Nickname: "普通用户",
-			Email:    "user@example.com",
-			Phone:    "13800000002",
-			Status:   1,
+			AppKey:      "crm",
+			AppName:     "CRM客户管理",
+			Version:     "1.5.0",
+			Author:      "Power Admin Team",
+			Description: "企业客户关系管理系统，支持客户跟进、商机管理、合同管理等",
+			Icon:        "https://picsum.photos/300/200?random=3",
+			Category:    "business",
+			Tags:        "客户管理,销售",
+			Rating:      4.5,
+			Downloads:   750,
+			Status:      1,
+			Published:   1,
+		},
+		{
+			AppKey:      "finance",
+			AppName:     "财务管理系统",
+			Version:     "1.2.0",
+			Author:      "Power Admin Team",
+			Description: "企业财务管理工具，涵盖应收应付、报表、成本管理等功能",
+			Icon:        "https://picsum.photos/300/200?random=4",
+			Category:    "finance",
+			Tags:        "财务,报表",
+			Rating:      4.7,
+			Downloads:   680,
+			Status:      1,
+			Published:   1,
+		},
+		{
+			AppKey:      "hr",
+			AppName:     "HR人力资源",
+			Version:     "1.1.0",
+			Author:      "Power Admin Team",
+			Description: "人力资源管理平台，支持招聘、员工档案、考勤、薪资管理",
+			Icon:        "https://picsum.photos/300/200?random=5",
+			Category:    "business",
+			Tags:        "人力资源,招聘",
+			Rating:      4.4,
+			Downloads:   520,
+			Status:      1,
+			Published:   1,
+		},
+		{
+			AppKey:      "marketing",
+			AppName:     "营销工具箱",
+			Version:     "1.0.0",
+			Author:      "Power Admin Team",
+			Description: "集成营销工具，支持活动管理、积分管理、优惠券等营销功能",
+			Icon:        "https://picsum.photos/300/200?random=6",
+			Category:    "marketing",
+			Tags:        "营销,促销",
+			Rating:      4.3,
+			Downloads:   400,
+			Status:      1,
+			Published:   1,
 		},
 	}
 
-	for _, user := range users {
-		// 先查找是否存在
-		var existingUser models.User
-		if err := database.Where("username = ?", user.Username).First(&existingUser).Error; err == nil {
-			// 存在则更新密码
-			database.Model(&existingUser).Update("password", user.Password)
-		} else {
-			// 不存在则创建
-			if err := database.Create(&user).Error; err != nil {
-				return fmt.Errorf("failed to seed users: %w", err)
-			}
+	if err := db.Create(&apps).Error; err != nil {
+		panic("Failed to insert apps: " + err.Error())
+	}
+
+	fmt.Printf("✓ 应用数据插入成功 (%d 条)\n", len(apps))
+
+	// 插入已安装的应用记录（仅 power-cms）
+	cmsApp := &models.App{}
+	db.Where("app_key = ?", "power-cms").First(cmsApp)
+
+	if cmsApp.ID > 0 {
+		installation := &models.AppInstallation{
+			AppKey:  "power-cms",
+			AppID:   cmsApp.ID,
+			AppName: "CMS内容系统",
+			Version: "1.0.0",
+			Status:  1,
 		}
-	}
-	log.Println("✓ 用户数据插入成功 (默认密码: 123456)")
 
-	// 插入角色
-	roles := []models.Role{
-		{Name: "admin", Description: "管理员", Status: 1},
-		{Name: "editor", Description: "编辑", Status: 1},
-		{Name: "user", Description: "普通用户", Status: 1},
-	}
-
-	for _, role := range roles {
-		if err := database.FirstOrCreate(&role, models.Role{Name: role.Name}).Error; err != nil {
-			return fmt.Errorf("failed to seed roles: %w", err)
+		if err := db.Create(installation).Error; err != nil {
+			panic("Failed to insert app installation: " + err.Error())
 		}
-	}
-	log.Println("✓ 角色数据插入成功")
 
-	// 插入菜单
-	menus := []models.Menu{
-		{ParentID: 0, MenuName: "系统管理", MenuPath: "/system", Icon: "setting", Sort: 10, Status: 1, MenuType: 1},
-		{ParentID: 1, MenuName: "用户管理", MenuPath: "/system/users", Component: "system/user/UserList", Icon: "user", Sort: 1, Status: 1, MenuType: 1},
-		{ParentID: 1, MenuName: "角色管理", MenuPath: "/system/roles", Component: "system/role/RoleList", Icon: "admin", Sort: 2, Status: 1, MenuType: 1},
-		{ParentID: 1, MenuName: "菜单管理", MenuPath: "/system/menus", Component: "system/menu/MenuList", Icon: "menu", Sort: 3, Status: 1, MenuType: 1},
-		{ParentID: 1, MenuName: "权限管理", MenuPath: "/system/permissions", Component: "system/permission/PermissionList", Icon: "lock", Sort: 4, Status: 1, MenuType: 1},
-		{ParentID: 1, MenuName: "API管理", MenuPath: "/system/apis", Component: "system/api/ApiList", Icon: "link", Sort: 5, Status: 1, MenuType: 1},
-		{ParentID: 0, MenuName: "内容管理", MenuPath: "/content", Icon: "document", Sort: 20, Status: 1, MenuType: 1},
-		{ParentID: 7, MenuName: "字典管理", MenuPath: "/content/dicts", Component: "content/dict/DictList", Icon: "list", Sort: 1, Status: 1, MenuType: 1},
-		{ParentID: 0, MenuName: "应用中心", MenuPath: "/market", Icon: "shopping", Sort: 30, Status: 1, MenuType: 1},
-		{ParentID: 9, MenuName: "应用市场", MenuPath: "/market/apps", Component: "market/AppMarket", Icon: "shop", Sort: 1, Status: 1, MenuType: 1},
-		{ParentID: 0, MenuName: "系统设置", MenuPath: "/system-config", Icon: "setting", Sort: 40, Status: 1, MenuType: 1},
-		{ParentID: 11, MenuName: "日志管理", MenuPath: "/logs", Component: "logs/LogList", Icon: "monitor", Sort: 1, Status: 1, MenuType: 1},
+		fmt.Println("✓ CMS应用标记为已安装")
 	}
 
-	for _, menu := range menus {
-		if err := database.FirstOrCreate(&menu, models.Menu{MenuPath: menu.MenuPath}).Error; err != nil {
-			return fmt.Errorf("failed to seed menus: %w", err)
-		}
-	}
-	log.Println("✓ 菜单数据插入成功")
-
-	// 插入字典
-	dictionaries := []models.Dictionary{
-		{DictType: "gender", DictLabel: "男", DictValue: "1", Sort: 1, Status: 1},
-		{DictType: "gender", DictLabel: "女", DictValue: "2", Sort: 2, Status: 1},
-		{DictType: "gender", DictLabel: "未知", DictValue: "0", Sort: 3, Status: 1},
-		{DictType: "status", DictLabel: "启用", DictValue: "1", Sort: 1, Status: 1},
-		{DictType: "status", DictLabel: "禁用", DictValue: "0", Sort: 2, Status: 1},
-		{DictType: "menu_type", DictLabel: "菜单", DictValue: "1", Sort: 1, Status: 1},
-		{DictType: "menu_type", DictLabel: "按钮", DictValue: "2", Sort: 2, Status: 1},
-		{DictType: "user_status", DictLabel: "正常", DictValue: "1", Sort: 1, Status: 1},
-		{DictType: "user_status", DictLabel: "禁用", DictValue: "0", Sort: 2, Status: 1},
-		{DictType: "user_status", DictLabel: "锁定", DictValue: "2", Sort: 3, Status: 1},
-	}
-
-	for _, dict := range dictionaries {
-		if err := database.FirstOrCreate(&dict, models.Dictionary{DictType: dict.DictType, DictValue: dict.DictValue}).Error; err != nil {
-			return fmt.Errorf("failed to seed dictionaries: %w", err)
-		}
-	}
-	log.Println("✓ 字典数据插入成功")
-
-	return nil
+	fmt.Println("\n✓ 数据初始化完成！")
 }

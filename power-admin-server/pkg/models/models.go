@@ -191,7 +191,7 @@ type App struct {
 	DownloadUrl string     `gorm:"size:255;comment:下载地址" json:"downloadUrl"`
 	DemoUrl     string     `gorm:"size:255;comment:演示地址" json:"demoUrl"`
 	Category    string     `gorm:"size:50;comment:应用分类" json:"category"`
-	Tags        string     `gorm:"type:json;comment:应用标签" json:"tags"`
+	Tags        string     `gorm:"size:255;comment:应用标签" json:"tags"`
 	Rating      float64    `gorm:"comment:应用评分" json:"rating"`
 	Downloads   int64      `gorm:"comment:下载次数" json:"downloads"`
 	Status      int        `gorm:"comment:应用状态" json:"status"`
@@ -221,6 +221,23 @@ type Review struct {
 // TableName 指定表名
 func (Review) TableName() string {
 	return "reviews"
+}
+
+// AppInstallation 应用安装记录表
+type AppInstallation struct {
+	ID        int64     `gorm:"primaryKey;comment:安装记录ID" json:"id"`
+	AppKey    string    `gorm:"uniqueIndex;size:100;comment:应用标识" json:"appKey"`
+	AppID     int64     `gorm:"index;comment:应用ID" json:"appId"`
+	AppName   string    `gorm:"size:100;comment:应用名称" json:"appName"`
+	Version   string    `gorm:"size:50;comment:安装版本" json:"version"`
+	Status    int       `gorm:"comment:安装状态(1:已安装,0:未安装)" json:"status"`
+	CreatedAt time.Time `gorm:"autoCreateTime;comment:安装时间" json:"createdAt"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime;comment:更新时间" json:"updatedAt"`
+}
+
+// TableName 指定表名
+func (AppInstallation) TableName() string {
+	return "app_installations"
 }
 
 // RoleMenu 角色菜单关联表

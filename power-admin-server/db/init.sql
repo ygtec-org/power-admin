@@ -535,3 +535,55 @@ INSERT INTO apis (api_name, api_path, api_method, description, status) VALUES
 ('编辑API', '/api/admin/system/apis', 'PUT', '编辑API接口信息', 1),
 ('删除API', '/api/admin/system/apis', 'DELETE', '删除API接口记录', 1),
 ('获取API详情', '/api/admin/system/apis/:id', 'GET', '根据ID获取API接口详情', 1);
+
+-- 应用市场表
+CREATE TABLE IF NOT EXISTS apps (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '应用ID',
+    app_key VARCHAR(100) UNIQUE NOT NULL COMMENT '应用标识key',
+    app_name VARCHAR(100) NOT NULL COMMENT '应用名称',
+    version VARCHAR(50) COMMENT '应用版本',
+    author VARCHAR(100) COMMENT '作者',
+    description TEXT COMMENT '应用描述',
+    icon VARCHAR(255) COMMENT '应用图标URL',
+    download_url VARCHAR(255) COMMENT '下载地址',
+    demo_url VARCHAR(255) COMMENT '演示地址',
+    category VARCHAR(50) COMMENT '应用分类',
+    tags VARCHAR(255) COMMENT '应用标签',
+    rating DECIMAL(3,2) DEFAULT 0 COMMENT '评分',
+    downloads BIGINT DEFAULT 0 COMMENT '下载次数',
+    status INT DEFAULT 1 COMMENT '状态 1:上架 0:下架',
+    published INT DEFAULT 1 COMMENT '是否已发布 1:是 0:否',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted_at TIMESTAMP NULL COMMENT '删除时间',
+    INDEX idx_app_key (app_key),
+    INDEX idx_category (category),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='应用市场表';
+
+-- 应用安装记录表
+CREATE TABLE IF NOT EXISTS app_installations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '安装记录ID',
+    app_key VARCHAR(100) UNIQUE NOT NULL COMMENT '应用标识',
+    app_id BIGINT COMMENT '应用ID',
+    app_name VARCHAR(100) COMMENT '应用名称',
+    version VARCHAR(50) COMMENT '安装版本',
+    status INT DEFAULT 1 COMMENT '安装状态(1:已安装,0:未安装)',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '安装时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_app_key (app_key),
+    INDEX idx_app_id (app_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='应用安装记录表';
+
+-- 插入应用市场数据
+INSERT INTO apps (app_key, app_name, version, author, description, icon, category, tags, rating, downloads, status, published) VALUES
+('cms', 'CMS内容系统', '1.0.0', 'Power Admin Team', '完整的内容管理系统，支持文章、分类、标签、评论管理，适合博客和内容运营', 'https://via.placeholder.com/200?text=CMS', 'content', '内容管理,博客', 4.8, 1250, 1, 1),
+('shop', '电商系统', '2.0.0', 'Power Admin Team', '功能完整的电商平台，包含商品管理、订单、支付、物流跟踪等功能', 'https://via.placeholder.com/200?text=Shop', 'business', '电商,商城', 4.6, 980, 1, 1),
+('crm', 'CRM客户管理', '1.5.0', 'Power Admin Team', '企业客户关系管理系统，支持客户跟进、商机管理、合同管理等', 'https://via.placeholder.com/200?text=CRM', 'business', '客户管理,销售', 4.5, 750, 1, 1),
+('finance', '财务管理系统', '1.2.0', 'Power Admin Team', '企业财务管理工具，涵盖应收应付、报表、成本管理等功能', 'https://via.placeholder.com/200?text=Finance', 'finance', '财务,报表', 4.7, 680, 1, 1),
+('hr', 'HR人力资源', '1.1.0', 'Power Admin Team', '人力资源管理平台，支持招聘、员工档案、考勤、薪资管理', 'https://via.placeholder.com/200?text=HR', 'business', '人力资源,招聘', 4.4, 520, 1, 1),
+('marketing', '营销工具箱', '1.0.0', 'Power Admin Team', '集成营销工具，支持活动管理、积分管理、优惠券等营销功能', 'https://via.placeholder.com/200?text=Marketing', 'marketing', '营销,促销', 4.3, 400, 1, 1);
+
+-- 插入已安装应用记录（仅CMS已安装）
+INSERT INTO app_installations (app_key, app_id, app_name, version, status) VALUES
+('cms', 1, 'CMS内容系统', '1.0.0', 1);

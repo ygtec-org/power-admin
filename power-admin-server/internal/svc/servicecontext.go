@@ -1,14 +1,19 @@
 package svc
 
 import (
+	"os"
+	"path/filepath"
+
 	"power-admin-server/internal/config"
 	"power-admin-server/internal/middleware"
+	"power-admin-server/internal/service"
 	"power-admin-server/pkg/auth"
 	"power-admin-server/pkg/models"
 	"power-admin-server/pkg/permission"
 	"power-admin-server/pkg/repository"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -26,8 +31,7 @@ type ServiceContext struct {
 	PermissionRepo *repository.PermissionRepository
 	DictRepo       *repository.DictionaryRepository
 	APIRepo        *repository.APIRepository
-	AppRepo        *repository.AppRepository
-	ReviewRepo     *repository.ReviewRepository
+	AppRepository  repository.AppRepository
 
 	// CMS Repositories
 	CmsContentRepo  repository.ContentRepository
@@ -35,6 +39,9 @@ type ServiceContext struct {
 	CmsTagRepo      repository.TagRepository
 	CmsUserRepo     repository.CmsUserRepository
 	CmsCommentRepo  repository.CommentRepository
+
+	// Services
+	PluginService *service.PluginService
 
 	// Permission
 	Permission          *permission.RBACEnforcer
@@ -66,8 +73,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	permissionRepo := repository.NewPermissionRepository(db)
 	dictRepo := repository.NewDictionaryRepository(db)
 	apiRepo := repository.NewAPIRepository(db)
-	appRepo := repository.NewAppRepository(db)
-	reviewRepo := repository.NewReviewRepository(db)
+	appRepository := repository.NewAppRepository(db)
 
 	// 使用配置文件初始化Casbin
 	permissionManager, err := permission.NewRBACEnforcer(db, "etc/rbac_model.conf")
@@ -82,6 +88,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	cmsUserRepo := repository.NewCmsUserRepository(db)
 	cmsCommentRepo := repository.NewCommentRepository(db)
 
+	// 初始化PluginService - 使用绝对路径
+	pluginService := service.NewPluginService(getPluginsDir())
+
 	return &ServiceContext{
 		Config:              c,
 		DB:                  db,
@@ -92,13 +101,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		PermissionRepo:      permissionRepo,
 		DictRepo:            dictRepo,
 		APIRepo:             apiRepo,
-		AppRepo:             appRepo,
-		ReviewRepo:          reviewRepo,
+		AppRepository:       appRepository,
 		CmsContentRepo:      cmsContentRepo,
 		CmsCategoryRepo:     cmsCategoryRepo,
 		CmsTagRepo:          cmsTagRepo,
 		CmsUserRepo:         cmsUserRepo,
 		CmsCommentRepo:      cmsCommentRepo,
+		PluginService:       pluginService,
 		Permission:          permissionManager,
 		AdminAuthMiddleware: middleware.NewAdminAuthMiddleware(&c, permissionManager).Handle,
 	}
@@ -113,6 +122,7 @@ func autoMigrate(db *gorm.DB) error {
 		&models.Dictionary{},
 		&models.API{},
 		&models.App{},
+		&models.AppInstallation{},
 		&models.Review{},
 		&models.Log{},
 		&models.Permission{},
@@ -135,4 +145,34 @@ func autoMigrate(db *gorm.DB) error {
 		//&models.CmsLike{},
 		//&models.CmsDraft{},
 	)
+}
+
+// getPluginsDir 获取插件目录的绝对路径
+func getPluginsDir() string {
+	// 获取可执行文件所在目录
+	execPath, err := os.Executable()
+	if err != nil {
+		logx.Errorf("Failed to get executable path: %v", err)
+		return "plugins" // 降级到相对路径
+	}
+
+	// 获取可执行文件的目录
+	execDir := filepath.Dir(execPath)
+
+	// 如果在 bin 目录中，往上两级到 power-admin 项目根目录
+	// 例如: d:\Workspace\project\app\power-admin\power-admin-server\bin\power-admin.exe
+	// 我们需要: d:\Workspace\project\app\power-admin\plugins
+	// bin -> power-admin-server -> power-admin
+	projectRoot := filepath.Join(execDir, "..", "..")
+	pluginDir := filepath.Join(projectRoot, "plugins")
+
+	// 规范化路径
+	pluginDir, err = filepath.Abs(pluginDir)
+	if err != nil {
+		logx.Errorf("Failed to get absolute plugins path: %v", err)
+		return "plugins"
+	}
+
+	logx.Infof("Plugin directory: %s", pluginDir)
+	return pluginDir
 }

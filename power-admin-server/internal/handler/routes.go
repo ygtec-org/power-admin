@@ -6,6 +6,7 @@ package handler
 import (
 	"net/http"
 
+	app "power-admin-server/internal/handler/app"
 	auth "power-admin-server/internal/handler/auth"
 	dicts "power-admin-server/internal/handler/dicts"
 	iface "power-admin-server/internal/handler/iface"
@@ -19,6 +20,41 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AdminAuthMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/app-market/install",
+					Handler: app.AppInstallHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/app-market/install-status",
+					Handler: app.AppInstallStatusHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/app-market/list",
+					Handler: app.AppListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/app-market/search",
+					Handler: app.SearchAppHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/app-market/uninstall",
+					Handler: app.AppUninstallHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/admin"),
+	)
+
 	server.AddRoutes(
 		[]rest.Route{
 			{

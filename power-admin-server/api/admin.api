@@ -513,3 +513,80 @@ service power-api {
 	get /system/apis/:id (GetApiReq) returns (ApiInfo)
 }
 
+// 应用市场相关类型
+type (
+	AppInfo {
+		Id          int64   `json:"id"`
+		AppKey      string  `json:"appKey"`
+		AppName     string  `json:"appName"`
+		Version     string  `json:"version"`
+		Author      string  `json:"author"`
+		Description string  `json:"description"`
+		Icon        string  `json:"icon"`
+		DownloadUrl string  `json:"downloadUrl"`
+		DemoUrl     string  `json:"demoUrl"`
+		Category    string  `json:"category"`
+		Tags        string  `json:"tags"`
+		Rating      float64 `json:"rating"`
+		Downloads   int64   `json:"downloads"`
+		Status      int     `json:"status"`
+		Published   int     `json:"published"`
+		Installed   bool    `json:"installed"`
+		CreatedAt   string  `json:"createdAt"`
+	}
+	AppListReq {
+		Page     int    `form:"page,default=1"`
+		PageSize int    `form:"pageSize,default=10"`
+		Category string `form:"category,optional"`
+	}
+	AppListResp {
+		Total int64     `json:"total"`
+		List  []AppInfo `json:"list"`
+	}
+	AppInstallStatusReq {
+		AppKey string `form:"appKey"`
+	}
+	AppInstallStatusResp {
+		AppKey    string `json:"appKey"`
+		Installed bool   `json:"installed"`
+	}
+	AppInstallReq {
+		AppId  int64  `form:"appId"`
+		AppKey string `form:"appKey"`
+	}
+	AppInstallResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+	AppUninstallReq {
+		AppKey string `form:"appKey"`
+	}
+	AppUninstallResp {
+		Success bool   `json:"success"`
+		Message string `json:"message"`
+	}
+)
+
+@server (
+	group:      "app"
+	prefix:     "/api/admin"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+service power-api {
+	@handler AppList
+	get /app-market/list (AppListReq) returns (AppListResp)
+
+	@handler SearchApp
+	get /app-market/search (AppListReq) returns (AppListResp)
+
+	@handler AppInstallStatus
+	get /app-market/install-status (AppInstallStatusReq) returns (AppInstallStatusResp)
+
+	@handler AppInstall
+	post /app-market/install (AppInstallReq) returns (AppInstallResp)
+
+	@handler AppUninstall
+	post /app-market/uninstall (AppUninstallReq) returns (AppUninstallResp)
+}
+
