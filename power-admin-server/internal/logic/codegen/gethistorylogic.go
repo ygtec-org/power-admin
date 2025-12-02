@@ -27,10 +27,9 @@ func NewGetHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GetHis
 	}
 }
 
-func (l *GetHistoryLogic) GetHistory() (resp *types.GenHistoryResp, err error) {
-	id := l.ctx.Value("id").(int64)
+func (l *GetHistoryLogic) GetHistory(req *types.GetHistoryReq) (resp *types.GenHistoryResp, err error) {
 
-	history, err := l.svcCtx.CodegenRepo.GetHistory(l.ctx, id)
+	history, err := l.svcCtx.CodegenRepo.GetHistory(l.ctx, req.Id)
 	if err != nil {
 		return nil, fmt.Errorf("历史记录不存在")
 	}

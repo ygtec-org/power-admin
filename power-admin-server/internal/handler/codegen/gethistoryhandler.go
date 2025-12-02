@@ -8,14 +8,23 @@ import (
 
 	"power-admin-server/internal/logic/codegen"
 	"power-admin-server/internal/svc"
+	"power-admin-server/internal/types"
+
+	"github.com/zeromicro/go-zero/rest/httpx"
 
 	"power-admin-server/common/response"
 )
 
 func GetHistoryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.GetHistoryReq
+		if err := httpx.Parse(r, &req); err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+
 		l := codegen.NewGetHistoryLogic(r.Context(), svcCtx)
-		resp, err := l.GetHistory()
+		resp, err := l.GetHistory(&req)
 		if err != nil {
 			response.Error(w, 500, err.Error())
 		} else {

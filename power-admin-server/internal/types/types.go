@@ -505,6 +505,10 @@ type GetDictReq struct {
 	Id int64 `json:"id" path:"id"`
 }
 
+type GetHistoryReq struct {
+	Id int64 `path:"id"`
+}
+
 type GetMenuReq struct {
 	Id int64 `json:"id" path:"id"`
 }

@@ -102,6 +102,9 @@ type (
 		Operator    string `json:"operator"`
 		CreatedAt   string `json:"createdAt"`
 	}
+    GetHistoryReq{
+        Id int64 `path:"id"`
+    }
 	// 历史列表请求
 	GenHistoryListReq {
 		Page      int    `form:"page,default=1"`
@@ -209,7 +212,7 @@ service power-api {
 	get /history/list (GenHistoryListReq) returns (GenHistoryListResp)
 
 	@handler GetHistory
-	get /history/:id returns (GenHistoryResp)
+	get /history/:id(GetHistoryReq) returns (GenHistoryResp)
 
 	@handler DeleteHistory
 	delete /history/:id
