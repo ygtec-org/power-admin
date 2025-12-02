@@ -78,6 +78,12 @@ func (e *TemplateEngine) RenderRepository(config *models.GenConfig, columns []*m
 	return e.render("repository", data)
 }
 
+// RenderVue 渲染Vue文件
+func (e *TemplateEngine) RenderVue(config *models.GenConfig, columns []*models.GenTableColumn) (string, error) {
+	data := e.prepareTemplateData(config, columns)
+	return e.render("vue", data)
+}
+
 // prepareTemplateData 准备模板数据
 func (e *TemplateEngine) prepareTemplateData(config *models.GenConfig, columns []*models.GenTableColumn) *TemplateData {
 	structName := repository.TableNameToStructName(config.Table, config.TablePrefix)
@@ -151,6 +157,7 @@ func GetDefaultTemplates() map[string]string {
 		"model":      modelTemplate,
 		"logic":      logicTemplate,
 		"repository": repositoryTemplate,
+		"vue":        vueTemplate,
 	}
 }
 
