@@ -25,6 +25,10 @@ import CMSPublishList from '../pages/cms/publish/PublishList.vue'
 // 应用市场
 import AppMarket from '../pages/market/AppMarket.vue'
 
+// 开发工具
+import CodeGen from '../pages/devtools/codegen/CodeGen.vue'
+import GenHistory from '../pages/devtools/history/GenHistory.vue'
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
@@ -125,6 +129,19 @@ const routes: RouteRecordRaw[] = [
         name: 'AppMarket',
         component: AppMarket,
         meta: { title: '应用市场' },
+      },
+      // 开发工具
+      {
+        path: '/devtools/codegen',
+        name: 'CodeGen',
+        component: CodeGen,
+        meta: { title: '代码生成' },
+      },
+      {
+        path: '/devtools/history',
+        name: 'GenHistory',
+        component: GenHistory,
+        meta: { title: '生成历史' },
       },
     ],
   },

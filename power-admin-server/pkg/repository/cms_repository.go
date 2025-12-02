@@ -20,6 +20,7 @@ type ContentRepository interface {
 	Delete(ctx context.Context, id int64) error
 	SoftDelete(ctx context.Context, id int64) error
 	List(ctx context.Context, req *ContentListRequest) (*PagedResult, error)
+	GetAll(ctx context.Context) ([]*models.CmsContent, error)
 	GetBySlug(ctx context.Context, slug string) (*models.CmsContent, error)
 	Publish(ctx context.Context, id int64) error
 	Unpublish(ctx context.Context, id int64) error
@@ -33,6 +34,7 @@ type CategoryRepository interface {
 	Update(ctx context.Context, id int64, category *models.CmsCategory) error
 	Delete(ctx context.Context, id int64) error
 	List(ctx context.Context, parentID *int64) ([]*models.CmsCategory, error)
+	GetAll(ctx context.Context) ([]*models.CmsCategory, error)
 	GetTree(ctx context.Context) ([]*models.CmsCategory, error)
 	GetBySlug(ctx context.Context, slug string) (*models.CmsCategory, error)
 	UpdateContentCount(ctx context.Context, categoryID int64, count int) error
@@ -43,7 +45,8 @@ type TagRepository interface {
 	Get(ctx context.Context, id int64) (*models.CmsTag, error)
 	Update(ctx context.Context, id int64, tag *models.CmsTag) error
 	Delete(ctx context.Context, id int64) error
-	List(ctx context.Context) ([]*models.CmsTag, error)
+	List(ctx context.Context, page, pageSize int) ([]*models.CmsTag, int64, error)
+	GetAll(ctx context.Context) ([]*models.CmsTag, error)
 	GetByName(ctx context.Context, name string) (*models.CmsTag, error)
 	GetByIDs(ctx context.Context, ids []int64) ([]*models.CmsTag, error)
 	UpdateUsageCount(ctx context.Context, tagID int64, count int) error
@@ -58,6 +61,7 @@ type CmsUserRepository interface {
 	GetByUsername(ctx context.Context, username string) (*models.CmsUser, error)
 	GetByEmail(ctx context.Context, email string) (*models.CmsUser, error)
 	List(ctx context.Context) ([]*models.CmsUser, error)
+	GetAll(ctx context.Context) ([]*models.CmsUser, error)
 	UpdateLastLogin(ctx context.Context, id int64, ip string) error
 }
 
@@ -66,7 +70,8 @@ type CommentRepository interface {
 	Get(ctx context.Context, id int64) (*models.CmsComment, error)
 	Update(ctx context.Context, id int64, comment *models.CmsComment) error
 	Delete(ctx context.Context, id int64) error
-	List(ctx context.Context, contentID int64) ([]*models.CmsComment, error)
+	List(ctx context.Context, contentID, page, pageSize int64) ([]*models.CmsComment, int64, error)
+	GetAll(ctx context.Context) ([]*models.CmsComment, error)
 	Approve(ctx context.Context, id int64) error
 	UpdateLikeCount(ctx context.Context, id int64, count int) error
 }
@@ -176,6 +181,12 @@ func (r *contentRepositoryImpl) List(ctx context.Context, req *ContentListReques
 	}, nil
 }
 
+func (r *contentRepositoryImpl) GetAll(ctx context.Context) ([]*models.CmsContent, error) {
+	var contents []*models.CmsContent
+	err := r.db.WithContext(ctx).Order("created_at DESC").Find(&contents).Error
+	return contents, err
+}
+
 func (r *contentRepositoryImpl) GetBySlug(ctx context.Context, slug string) (*models.CmsContent, error) {
 	var content models.CmsContent
 	err := r.db.WithContext(ctx).Where("slug = ?", slug).First(&content).Error
@@ -261,6 +272,12 @@ func (r *categoryRepositoryImpl) List(ctx context.Context, parentID *int64) ([]*
 	return categories, err
 }
 
+func (r *categoryRepositoryImpl) GetAll(ctx context.Context) ([]*models.CmsCategory, error) {
+	var categories []*models.CmsCategory
+	err := r.db.WithContext(ctx).Order("sort DESC, created_at DESC").Find(&categories).Error
+	return categories, err
+}
+
 func (r *categoryRepositoryImpl) GetTree(ctx context.Context) ([]*models.CmsCategory, error) {
 	var categories []*models.CmsCategory
 	err := r.db.WithContext(ctx).Where("parent_id IS NULL").Order("sort DESC").Find(&categories).Error
@@ -337,9 +354,21 @@ func (r *tagRepositoryImpl) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&models.CmsTag{}, id).Error
 }
 
-func (r *tagRepositoryImpl) List(ctx context.Context) ([]*models.CmsTag, error) {
+func (r *tagRepositoryImpl) List(ctx context.Context, page, pageSize int) ([]*models.CmsTag, int64, error) {
 	var tags []*models.CmsTag
-	err := r.db.WithContext(ctx).Where("status = ?", 1).Order("usage_count DESC").Find(&tags).Error
+	offset := (page - 1) * pageSize
+	err := r.db.WithContext(ctx).Where("status = ?", 1).Order("usage_count DESC").Offset(offset).Limit(pageSize).Find(&tags).Error
+	var total int64
+	err = r.db.WithContext(ctx).Model(&models.CmsTag{}).Where("status = ?", 1).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	return tags, total, err
+}
+
+func (r *tagRepositoryImpl) GetAll(ctx context.Context) ([]*models.CmsTag, error) {
+	var tags []*models.CmsTag
+	err := r.db.WithContext(ctx).Order("usage_count DESC").Find(&tags).Error
 	return tags, err
 }
 
@@ -436,6 +465,12 @@ func (r *cmsUserRepositoryImpl) List(ctx context.Context) ([]*models.CmsUser, er
 	return users, err
 }
 
+func (r *cmsUserRepositoryImpl) GetAll(ctx context.Context) ([]*models.CmsUser, error) {
+	var users []*models.CmsUser
+	err := r.db.WithContext(ctx).Order("created_at DESC").Find(&users).Error
+	return users, err
+}
+
 func (r *cmsUserRepositoryImpl) UpdateLastLogin(ctx context.Context, id int64, ip string) error {
 	now := time.Now()
 	return r.db.WithContext(ctx).Model(&models.CmsUser{}).Where("id = ?", id).
@@ -481,10 +516,22 @@ func (r *commentRepositoryImpl) Delete(ctx context.Context, id int64) error {
 	return r.db.WithContext(ctx).Delete(&models.CmsComment{}, id).Error
 }
 
-func (r *commentRepositoryImpl) List(ctx context.Context, contentID int64) ([]*models.CmsComment, error) {
+func (r *commentRepositoryImpl) List(ctx context.Context, contentID, page, pageSize int64) ([]*models.CmsComment, int64, error) {
 	var comments []*models.CmsComment
-	err := r.db.WithContext(ctx).Where("content_id = ? AND status = ?", contentID, 1).
+	var total int64
+	err := r.db.WithContext(ctx).Model(&models.CmsComment{}).Where("content_id = ? AND status = ?", contentID, 1).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	offset := (page - 1) * pageSize
+	err = r.db.WithContext(ctx).Where("content_id = ? AND status = ?", contentID, 1).Offset(int(offset)).Limit(int(pageSize)).
 		Order("created_at DESC").Find(&comments).Error
+	return comments, total, err
+}
+
+func (r *commentRepositoryImpl) GetAll(ctx context.Context) ([]*models.CmsComment, error) {
+	var comments []*models.CmsComment
+	err := r.db.WithContext(ctx).Order("created_at DESC").Find(&comments).Error
 	return comments, err
 }
 

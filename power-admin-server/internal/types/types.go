@@ -115,6 +115,172 @@ type AssignRolesToUserResp struct {
 	Message string `json:"message"`
 }
 
+type CategoryCreateReq struct {
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	ParentId    int64  `json:"parentId"`
+}
+
+type CategoryData struct {
+	Id          int64          `json:"id"`
+	Name        string         `json:"name"`
+	Slug        string         `json:"slug"`
+	Description string         `json:"description"`
+	ParentId    int64          `json:"parentId"`
+	Children    []CategoryData `json:"children,omitempty"`
+}
+
+type CategoryDeleteReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type CategoryListReq struct {
+	ParentId int64 `json:"parentId"`
+}
+
+type CategoryListResp struct {
+	Total int64          `json:"total"`
+	Data  []CategoryData `json:"data"`
+}
+
+type CategoryResp struct {
+	Data []CategoryData `json:"data"`
+}
+
+type CategoryUpdateReq struct {
+	Id          int64  `json:"id" path:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	ParentId    int64  `json:"parentId"`
+}
+
+type CmsUserListReq struct {
+	Page     int `json:"page,default=1"`
+	PageSize int `json:"pageSize,default=10"`
+}
+
+type CmsUserListResp struct {
+	Total int64      `json:"total"`
+	Data  []UserData `json:"data"`
+}
+
+type CodeGenerateReq struct {
+	ID int64 `json:"id"`
+}
+
+type CodeGenerateResp struct {
+	Success   bool             `json:"success"`
+	Message   string           `json:"message"`
+	Files     []GeneratedFile  `json:"files,omitempty"`
+	Histories []GenHistoryResp `json:"histories,omitempty"`
+}
+
+type CodePreviewReq struct {
+	ID int64 `json:"id"`
+}
+
+type CodePreviewResp struct {
+	Files []GeneratedFile `json:"files"`
+}
+
+type ColumnInfo struct {
+	ColumnName    string `json:"columnName"`
+	ColumnType    string `json:"columnType"`
+	DataType      string `json:"dataType"`
+	ColumnComment string `json:"columnComment"`
+	IsNullable    string `json:"isNullable"`
+	ColumnKey     string `json:"columnKey"`
+	Extra         string `json:"extra"`
+}
+
+type CommentApproveReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type CommentCreateReq struct {
+	ContentId   string `json:"contentId"`
+	Content     string `json:"content"`
+	AuthorName  string `json:"authorName"`
+	AuthorEmail string `json:"authorEmail"`
+}
+
+type CommentData struct {
+	Id      int64  `json:"id"`
+	Content string `json:"content"`
+	Status  int    `json:"status"`
+}
+
+type CommentDeleteReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type CommentListReq struct {
+	ContentId int64 `json:"contentId"`
+	Page      int   `json:"page,default=1"`
+	PageSize  int   `json:"pageSize,default=10"`
+}
+
+type CommentListResp struct {
+	Total int64         `json:"total"`
+	Data  []CommentData `json:"data"`
+}
+
+type CommentRejectReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type ContentCreateReq struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Content     string `json:"content"`
+	Slug        string `json:"slug"`
+	CategoryId  int64  `json:"categoryId"`
+	Status      int    `json:"status,default=1"`
+}
+
+type ContentData struct {
+	Id           int64  `json:"id"`
+	Title        string `json:"title"`
+	Description  string `json:"description"`
+	Content      string `json:"content"`
+	Slug         string `json:"slug"`
+	CategoryId   int64  `json:"categoryId"`
+	CategoryName string `json:"categoryName"`
+	Status       int    `json:"status"`
+	ViewCount    int64  `json:"viewCount"`
+	CreatedAt    string `json:"createdAt"`
+	UpdatedAt    string `json:"updatedAt"`
+}
+
+type ContentListReq struct {
+	Page       int    `json:"page,default=1"`
+	PageSize   int    `json:"pageSize,default=10"`
+	Status     int    `json:"status"`
+	CategoryId int64  `json:"categoryId"`
+	Search     string `json:"search"`
+}
+
+type ContentListResp struct {
+	Total int64         `json:"total"`
+	Data  []ContentData `json:"data"`
+}
+
+type ContentResp struct {
+	Data ContentData `json:"data"`
+}
+
+type ContentUpdateReq struct {
+	Id          int64  `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Content     string `json:"content"`
+	Slug        string `json:"slug"`
+	CategoryId  int64  `json:"categoryId"`
+	Status      int    `json:"status"`
+}
+
 type CreateApiReq struct {
 	ApiName     string `json:"apiName"`
 	ApiPath     string `json:"apiPath"`
@@ -163,6 +329,14 @@ type CreateUserReq struct {
 	Password string `json:"password"`
 }
 
+type DatabaseTableInfo struct {
+	TableName    string       `json:"tableName"`
+	TableComment string       `json:"tableComment"`
+	Engine       string       `json:"engine"`
+	Charset      string       `json:"charset"`
+	Columns      []ColumnInfo `json:"columns"`
+}
+
 type DeleteApiReq struct {
 	Id int64 `json:"id"`
 }
@@ -209,8 +383,122 @@ type DictListResp struct {
 	Data  []DictInfo `json:"list"`
 }
 
+type GenConfigListReq struct {
+	Page      int    `form:"page,default=1"`
+	PageSize  int    `form:"pageSize,default=10"`
+	TableName string `form:"tableName,optional"`
+}
+
+type GenConfigListResp struct {
+	Total int64           `json:"total"`
+	Data  []GenConfigResp `json:"data"`
+}
+
+type GenConfigReq struct {
+	TableName    string              `json:"tableName"`
+	TablePrefix  string              `json:"tablePrefix,optional"`
+	BusinessName string              `json:"businessName"`
+	ModuleName   string              `json:"moduleName"`
+	PackageName  string              `json:"packageName"`
+	Author       string              `json:"author,optional"`
+	Remark       string              `json:"remark,optional"`
+	Columns      []GenTableColumnReq `json:"columns"`
+}
+
+type GenConfigResp struct {
+	ID           int64                `json:"id"`
+	TableName    string               `json:"tableName"`
+	TablePrefix  string               `json:"tablePrefix"`
+	BusinessName string               `json:"businessName"`
+	ModuleName   string               `json:"moduleName"`
+	PackageName  string               `json:"packageName"`
+	Author       string               `json:"author"`
+	Remark       string               `json:"remark"`
+	CreatedAt    string               `json:"createdAt"`
+	UpdatedAt    string               `json:"updatedAt"`
+	Columns      []GenTableColumnResp `json:"columns,omitempty"`
+}
+
+type GenHistoryListReq struct {
+	Page      int    `form:"page,default=1"`
+	PageSize  int    `form:"pageSize,default=10"`
+	TableName string `form:"tableName,optional"`
+}
+
+type GenHistoryListResp struct {
+	Total int64            `json:"total"`
+	Data  []GenHistoryResp `json:"data"`
+}
+
+type GenHistoryResp struct {
+	ID          int64  `json:"id"`
+	GenConfigID int64  `json:"genConfigId"`
+	TableName   string `json:"tableName"`
+	FilePath    string `json:"filePath"`
+	FileType    string `json:"fileType"`
+	Content     string `json:"content"`
+	Status      int    `json:"status"`
+	ErrorMsg    string `json:"errorMsg"`
+	Operator    string `json:"operator"`
+	CreatedAt   string `json:"createdAt"`
+}
+
+type GenTableColumnReq struct {
+	ColumnName    string `json:"columnName"`
+	ColumnComment string `json:"columnComment,optional"`
+	ColumnType    string `json:"columnType"`
+	GoType        string `json:"goType"`
+	GoField       string `json:"goField"`
+	IsPk          int    `json:"isPk,optional"`
+	IsIncrement   int    `json:"isIncrement,optional"`
+	IsRequired    int    `json:"isRequired,optional"`
+	IsInsert      int    `json:"isInsert,optional"`
+	IsEdit        int    `json:"isEdit,optional"`
+	IsList        int    `json:"isList,optional"`
+	IsQuery       int    `json:"isQuery,optional"`
+	QueryType     string `json:"queryType,optional"`
+	HtmlType      string `json:"htmlType,optional"`
+	DictType      string `json:"dictType,optional"`
+	Sort          int    `json:"sort,optional"`
+}
+
+type GenTableColumnResp struct {
+	ID            int64  `json:"id"`
+	GenConfigID   int64  `json:"genConfigId"`
+	ColumnName    string `json:"columnName"`
+	ColumnComment string `json:"columnComment"`
+	ColumnType    string `json:"columnType"`
+	GoType        string `json:"goType"`
+	GoField       string `json:"goField"`
+	IsPk          int    `json:"isPk"`
+	IsIncrement   int    `json:"isIncrement"`
+	IsRequired    int    `json:"isRequired"`
+	IsInsert      int    `json:"isInsert"`
+	IsEdit        int    `json:"isEdit"`
+	IsList        int    `json:"isList"`
+	IsQuery       int    `json:"isQuery"`
+	QueryType     string `json:"queryType"`
+	HtmlType      string `json:"htmlType"`
+	DictType      string `json:"dictType"`
+	Sort          int    `json:"sort"`
+}
+
+type GeneratedFile struct {
+	FilePath string `json:"filePath"`
+	FileType string `json:"fileType"`
+	Content  string `json:"content"`
+}
+
 type GetApiReq struct {
 	Id int64 `json:"id" path:"id"`
+}
+
+type GetDatabaseTablesReq struct {
+	TableName string `form:"tableName,optional"`
+}
+
+type GetDatabaseTablesResp struct {
+	Tables []DatabaseTableInfo `json:"tables"`
 }
 
 type GetDictReq struct {
@@ -254,6 +542,10 @@ type GetUserRolesReq struct {
 
 type GetUserRolesResp struct {
 	Data []RoleInfo `json:"data"`
+}
+
+type IdReq struct {
+	Id int64 `json:"id" path:"id"`
 }
 
 type LoginReq struct {
@@ -315,6 +607,23 @@ type PermissionListResp struct {
 	Data  []PermissionInfo `json:"list"`
 }
 
+type PublishBatchReq struct {
+	Ids []int64 `json:"ids"`
+}
+
+type PublishCancelReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type PublishImmediateReq struct {
+	Id int64 `json:"id"`
+}
+
+type PublishScheduleReq struct {
+	Id         int64  `json:"id"`
+	ScheduleAt string `json:"scheduleAt"`
+}
+
 type Response struct {
 	Code int         `json:"code"`
 	Msg  string      `json:"msg"`
@@ -348,6 +657,43 @@ type RolePermissionItem struct {
 	Type     string `json:"type"`            // "menu" 或 "api"
 	Group    string `json:"group,optional"`  // API所属分组
 	Method   string `json:"method,optional"` // API的HTTP方法
+}
+
+type TagCreateReq struct {
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	Color       string `json:"color"`
+}
+
+type TagData struct {
+	Id          int64  `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	Color       string `json:"color"`
+}
+
+type TagDeleteReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type TagListReq struct {
+	Page     int `json:"page,default=1"`
+	PageSize int `json:"pageSize,default=10"`
+}
+
+type TagListResp struct {
+	Total int64     `json:"total"`
+	Data  []TagData `json:"data"`
+}
+
+type TagUpdateReq struct {
+	Id          int64  `json:"id" path:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	Color       string `json:"color"`
 }
 
 type UpdateApiReq struct {
@@ -393,6 +739,26 @@ type UpdateUserReq struct {
 	Gender   int    `json:"gender,optional"`
 }
 
+type UserData struct {
+	Id        int64  `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Status    int    `json:"status"`
+	CreatedAt string `json:"createdAt"`
+}
+
+type UserDisableReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type UserEnableReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
+type UserGetReq struct {
+	Id int64 `json:"id" path:"id"`
+}
+
 type UserInfo struct {
 	Id        int64  `json:"id"`
 	Username  string `json:"username"`
@@ -424,4 +790,8 @@ type UserListReq struct {
 type UserListResp struct {
 	Total int64      `json:"total"`
 	Data  []UserInfo `json:"list"`
+}
+
+type UserResp struct {
+	Data UserData `json:"data"`
 }

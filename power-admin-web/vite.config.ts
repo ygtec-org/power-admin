@@ -23,7 +23,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/api/cms': {
-        target: 'http://localhost:8801',
+        target: 'http://localhost:8888',
         changeOrigin: true,
       },
     },

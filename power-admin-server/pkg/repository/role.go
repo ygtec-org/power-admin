@@ -131,8 +131,10 @@ func (r *RoleRepository) RemoveAllMenus(roleID int64) error {
 // GetRolesByUserID 根据用户ID获取上所有角色
 func (r *RoleRepository) GetRolesByUserID(userID int64) ([]models.Role, error) {
 	var roles []models.Role
-	err := r.db.Joins("LEFT JOIN user_roles ON user_roles.role_id = roles.id").
-		Where("user_roles.user_id = ? AND roles.status = 1", userID).
+	// 使用 GORM 的 Joins 是会自动处理表名前缀
+	// 不需要手动指定表名，自定义命名策略会自动处理
+	err := r.db.Joins("LEFT JOIN admin_user_roles ON admin_user_roles.role_id = admin_roles.id").
+		Where("admin_user_roles.user_id = ? AND admin_roles.status = 1", userID).
 		Find(&roles).Error
 	return roles, err
 }

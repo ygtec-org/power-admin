@@ -6,17 +6,16 @@
         <span class="menu-icon">{{ expandedMenus.has(menu.id) ? '▼' : '▶' }}</span>
         <span>{{ getMenuIcon(menu.icon) }} {{ menu.menu_name || menu.menuName }}</span>
       </div>
-      <transition name="slide">
-        <div v-show="expandedMenus.has(menu.id)" class="menu-children">
-          <!-- 递归渲染子菜单 -->
-          <MenuTree 
-            :menus="menu.children" 
-            :expanded-menus="expandedMenus"
-            :level="level + 1"
-            @toggle="$emit('toggle', $event)"
-          />
-        </div>
-      </transition>
+      <!-- 使用v-if替代v-show，避免DOM操作错误 -->
+      <div v-if="expandedMenus.has(menu.id)" class="menu-children" :key="`children-${menu.id}`">
+        <!-- 递归渲染子菜单 -->
+        <MenuTree 
+          :menus="menu.children" 
+          :expanded-menus="expandedMenus"
+          :level="level + 1"
+          @toggle="$emit('toggle', $event)"
+        />
+      </div>
     </div>
     <!-- 没有子菜单的叶子菜单（允许 menu_path 或 menuPath） -->
     <RouterLink 
@@ -30,6 +29,12 @@
     </RouterLink>
   </template>
 </template>
+
+<script>
+export default {
+  name: 'MenuTree'
+}
+</script>
 
 <script setup>
 import { RouterLink } from 'vue-router'

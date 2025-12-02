@@ -121,8 +121,8 @@ func (r *MenuRepository) GetMenuTree(parentID int64) ([]*models.Menu, error) {
 // GetMenusByRole 根据角色获取菜单
 func (r *MenuRepository) GetMenusByRole(roleID int64) ([]models.Menu, error) {
 	var menus []models.Menu
-	err := r.db.Joins("LEFT JOIN role_menus ON role_menus.menu_id = menus.id").
-		Where("role_menus.role_id = ? AND menus.status = 1", roleID).
+	err := r.db.Joins("LEFT JOIN admin_role_menus ON admin_role_menus.menu_id = menus.id").
+		Where("admin_role_menus.role_id = ? AND menus.status = 1", roleID).
 		Order("menus.sort").
 		Find(&menus).Error
 	return menus, err
@@ -131,8 +131,8 @@ func (r *MenuRepository) GetMenusByRole(roleID int64) ([]models.Menu, error) {
 // GetMenusTreeByRole 根据角色获取菜单树形结构
 func (r *MenuRepository) GetMenusTreeByRole(roleID int64, parentID int64) ([]*models.Menu, error) {
 	var menus []models.Menu
-	err := r.db.Joins("LEFT JOIN role_menus ON role_menus.menu_id = menus.id").
-		Where("role_menus.role_id = ? AND menus.parent_id = ? AND menus.status = 1", roleID, parentID).
+	err := r.db.Joins("LEFT JOIN admin_role_menus ON admin_role_menus.menu_id = menus.id").
+		Where("admin_role_menus.role_id = ? AND menus.parent_id = ? AND menus.status = 1", roleID, parentID).
 		Order("menus.sort").
 		Find(&menus).Error
 	if err != nil {
@@ -158,8 +158,8 @@ func (r *MenuRepository) GetMenusByRoleIDs(roleIDs []int64) ([]models.Menu, erro
 	var menus []models.Menu
 	// 使用DISTINCT来避免重复，因为多个角色可能绑定了同一个菜单
 	err := r.db.Distinct("menus.*").
-		Joins("LEFT JOIN role_menus ON role_menus.menu_id = menus.id").
-		Where("role_menus.role_id IN ? AND menus.status = 1", roleIDs).
+		Joins("LEFT JOIN admin_role_menus ON admin_role_menus.menu_id = menus.id").
+		Where("admin_role_menus.role_id IN ? AND menus.status = 1", roleIDs).
 		Order("menus.sort").
 		Find(&menus).Error
 	return menus, err

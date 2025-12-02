@@ -1,0 +1,329 @@
+syntax = "v1"
+
+info (
+	title:   "CMS Content Management System"
+	desc:    "内容管理系统 API"
+	author:  "Power Admin Team"
+	email:   "admin@power-admin.com"
+	version: "1.0.0"
+)
+
+type (
+	// ==================== 公共类型 ====================
+	ContentData {
+		Id           int64  `json:"id"`
+		Title        string `json:"title"`
+		Description  string `json:"description"`
+		Content      string `json:"content"`
+		Slug         string `json:"slug"`
+		CategoryId   int64  `json:"categoryId"`
+		CategoryName string `json:"categoryName"`
+		Status       int    `json:"status"`
+		ViewCount    int64  `json:"viewCount"`
+		CreatedAt    string `json:"createdAt"`
+		UpdatedAt    string `json:"updatedAt"`
+	}
+	ContentResp {
+		Data ContentData `json:"data"`
+	}
+	CategoryData {
+		Id          int64          `json:"id"`
+		Name        string         `json:"name"`
+		Slug        string         `json:"slug"`
+		Description string         `json:"description"`
+		ParentId    int64          `json:"parentId"`
+		Children    []CategoryData `json:"children,omitempty"`
+	}
+	CategoryResp {
+		Data []CategoryData `json:"data"`
+	}
+	UserData {
+		Id        int64  `json:"id"`
+		Username  string `json:"username"`
+		Email     string `json:"email"`
+		Status    int    `json:"status"`
+		CreatedAt string `json:"createdAt"`
+	}
+    CmsUserListReq{
+        Page     int `json:"page,default=1"`
+        PageSize int `json:"pageSize,default=10"`
+    }
+	UserResp {
+		Data UserData `json:"data"`
+	}
+	// ==================== 列表响应 ====================
+	ContentListResp {
+		Total int64         `json:"total"`
+		Data  []ContentData `json:"data"`
+	}
+	CategoryListResp {
+		Total int64          `json:"total"`
+		Data  []CategoryData `json:"data"`
+	}
+	TagData {
+		Id          int64  `json:"id"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+		Color       string `json:"color"`
+	}
+	TagListResp {
+		Total int64    `json:"total"`
+		Data  []TagData `json:"data"`
+	}
+	CommentData {
+		Id      int64  `json:"id"`
+		Content string `json:"content"`
+		Status  int    `json:"status"`
+	}
+	CommentListResp {
+		Total int64        `json:"total"`
+		Data  []CommentData `json:"data"`
+	}
+	CmsUserListResp {
+		Total int64      `json:"total"`
+		Data  []UserData `json:"data"`
+	}
+	// ==================== 内容管理 ====================
+	ContentListReq {
+		Page       int    `json:"page,default=1"`
+		PageSize   int    `json:"pageSize,default=10"`
+		Status     int    `json:"status"`
+		CategoryId int64  `json:"categoryId"`
+		Search     string `json:"search"`
+	}
+	ContentCreateReq {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Content     string `json:"content"`
+		Slug        string `json:"slug"`
+		CategoryId  int64  `json:"categoryId"`
+		Status      int    `json:"status,default=1"`
+	}
+	ContentUpdateReq {
+		Id          int64  `json:"id"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Content     string `json:"content"`
+		Slug        string `json:"slug"`
+		CategoryId  int64  `json:"categoryId"`
+		Status      int    `json:"status"`
+	}
+	// ==================== 分类管理 ====================
+	CategoryListReq {
+		ParentId int64 `json:"parentId"`
+	}
+	CategoryCreateReq {
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+		ParentId    int64  `json:"parentId"`
+	}
+	CategoryUpdateReq {
+		Id          int64  `json:"id" path:"id"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+		ParentId    int64  `json:"parentId"`
+	}
+	CategoryDeleteReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// ==================== 标签管理 ====================
+	TagListReq {
+		Page     int `json:"page,default=1"`
+		PageSize int `json:"pageSize,default=10"`
+	}
+	TagCreateReq {
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+		Color       string `json:"color"`
+	}
+	TagUpdateReq {
+		Id          int64  `json:"id" path:"id"`
+		Name        string `json:"name"`
+		Slug        string `json:"slug"`
+		Description string `json:"description"`
+		Color       string `json:"color"`
+	}
+	TagDeleteReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// ==================== 评论管理 ====================
+	CommentListReq {
+		ContentId int64 `json:"contentId"`
+		Page      int   `json:"page,default=1"`
+		PageSize  int   `json:"pageSize,default=10"`
+	}
+	CommentCreateReq {
+		ContentId   string `json:"contentId"`
+		Content     string `json:"content"`
+		AuthorName  string `json:"authorName"`
+		AuthorEmail string `json:"authorEmail"`
+	}
+	CommentApproveReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	CommentRejectReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	CommentDeleteReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// ==================== 用户管理 ====================
+	UserGetReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	UserDisableReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	UserEnableReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	// ==================== 发布管理 ====================
+	PublishImmediateReq {
+		Id int64 `json:"id"`
+	}
+	PublishScheduleReq {
+		Id         int64  `json:"id"`
+		ScheduleAt string `json:"scheduleAt"`
+	}
+	PublishCancelReq {
+		Id int64 `json:"id" path:"id"`
+	}
+	PublishBatchReq {
+		Ids []int64 `json:"ids"`
+	}
+	// ==================== 其他 ====================
+	IdReq {
+		Id int64 `json:"id" path:"id"`
+	}
+)
+
+@server (
+	group:      "cms"
+	prefix:     "/api/cms"
+	jwt:        Auth
+	middleware: AdminAuthMiddleware
+)
+service power-api {
+	// 内容管理
+	@doc "获取内容列表"
+	@handler ContentList
+	get /content/list (ContentListReq) returns (ContentListResp)
+
+	@doc "创建内容"
+	@handler ContentCreate
+	post /content (ContentCreateReq)
+
+	@doc "获取内容详情"
+	@handler ContentGet
+	get /content/:id (IdReq) returns (ContentResp)
+
+	@doc "更新内容"
+	@handler ContentUpdate
+	put /content/:id (ContentUpdateReq)
+
+	@doc "删除内容"
+	@handler ContentDelete
+	delete /content/:id (IdReq)
+
+	@doc "发布内容"
+	@handler ContentPublish
+	post /content/:id/publish (IdReq)
+
+	@doc "取消发布"
+	@handler ContentUnpublish
+	post /content/:id/unpublish (IdReq)
+
+	// 分类管理
+	@doc "获取分类列表"
+	@handler CategoryList
+	get /category/list (CategoryListReq) returns (CategoryListResp)
+
+	@doc "获取分类树"
+	@handler CategoryTree
+	get /category/tree returns (CategoryResp)
+
+	@doc "创建分类"
+	@handler CategoryCreate
+	post /category (CategoryCreateReq)
+
+	@doc "更新分类"
+	@handler CategoryUpdate
+	put /category/:id (CategoryUpdateReq)
+
+	@doc "删除分类"
+	@handler CategoryDelete
+	delete /category/:id (CategoryDeleteReq)
+
+	// 标签管理
+	@doc "获取标签列表"
+	@handler TagList
+	get /tag/list (TagListReq) returns (TagListResp)
+
+	@doc "创建标签"
+	@handler TagCreate
+	post /tag (TagCreateReq)
+
+	@doc "更新标签"
+	@handler TagUpdate
+	put /tag/:id (TagUpdateReq)
+
+	@doc "删除标签"
+	@handler TagDelete
+	delete /tag/:id (TagDeleteReq)
+
+	// 评论管理
+	@doc "获取评论列表"
+	@handler CommentList
+	get /comment/list (CommentListReq) returns (CommentListResp)
+
+	@doc "审核评论"
+	@handler CommentApprove
+	post /comment/:id/approve (CommentApproveReq)
+
+	@doc "拒绝评论"
+	@handler CommentReject
+	post /comment/:id/reject (CommentRejectReq)
+
+	@doc "删除评论"
+	@handler CommentDelete
+	delete /comment/:id (CommentDeleteReq)
+
+	// 用户管理
+	@doc "获取用户列表"
+	@handler UserList
+	get /user/list(CmsUserListReq) returns (CmsUserListResp)
+
+	@doc "获取用户信息"
+	@handler UserGet
+	get /user/:id (UserGetReq) returns (UserResp)
+
+	@doc "禁用用户"
+	@handler UserDisable
+	post /user/:id/disable (UserDisableReq)
+
+	@doc "启用用户"
+	@handler UserEnable
+	post /user/:id/enable (UserEnableReq)
+
+	// 发布管理
+	@doc "立即发布"
+	@handler PublishImmediate
+	post /publish/immediate (PublishImmediateReq)
+
+	@doc "定时发布"
+	@handler PublishSchedule
+	post /publish/schedule (PublishScheduleReq)
+
+	@doc "取消定时发布"
+	@handler PublishCancel
+	post /publish/cancel/:id (PublishCancelReq)
+
+	@doc "批量发布"
+	@handler PublishBatch
+	post /publish/batch (PublishBatchReq)
+}
+

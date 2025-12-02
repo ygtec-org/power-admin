@@ -1,0 +1,224 @@
+syntax = "v1"
+
+info (
+	title:   "代码生成器API"
+	desc:    "代码生成器相关接口"
+	author:  "PowerAdmin"
+	version: "1.0"
+)
+
+// ==================== 代码生成配置管理 ====================
+type (
+	// 代码生成配置请求
+	GenConfigReq {
+		TableName    string              `json:"tableName"`
+		TablePrefix  string              `json:"tablePrefix,optional"`
+		BusinessName string              `json:"businessName"`
+		ModuleName   string              `json:"moduleName"`
+		PackageName  string              `json:"packageName"`
+		Author       string              `json:"author,optional"`
+		Remark       string              `json:"remark,optional"`
+		Columns      []GenTableColumnReq `json:"columns"`
+	}
+	// 表字段信息请求
+	GenTableColumnReq {
+		ColumnName    string `json:"columnName"`
+		ColumnComment string `json:"columnComment,optional"`
+		ColumnType    string `json:"columnType"`
+		GoType        string `json:"goType"`
+		GoField       string `json:"goField"`
+		IsPk          int    `json:"isPk,optional"`
+		IsIncrement   int    `json:"isIncrement,optional"`
+		IsRequired    int    `json:"isRequired,optional"`
+		IsInsert      int    `json:"isInsert,optional"`
+		IsEdit        int    `json:"isEdit,optional"`
+		IsList        int    `json:"isList,optional"`
+		IsQuery       int    `json:"isQuery,optional"`
+		QueryType     string `json:"queryType,optional"`
+		HtmlType      string `json:"htmlType,optional"`
+		DictType      string `json:"dictType,optional"`
+		Sort          int    `json:"sort,optional"`
+	}
+	// 代码生成配置响应
+	GenConfigResp {
+		ID           int64                `json:"id"`
+		TableName    string               `json:"tableName"`
+		TablePrefix  string               `json:"tablePrefix"`
+		BusinessName string               `json:"businessName"`
+		ModuleName   string               `json:"moduleName"`
+		PackageName  string               `json:"packageName"`
+		Author       string               `json:"author"`
+		Remark       string               `json:"remark"`
+		CreatedAt    string               `json:"createdAt"`
+		UpdatedAt    string               `json:"updatedAt"`
+		Columns      []GenTableColumnResp `json:"columns,omitempty"`
+	}
+	// 表字段信息响应
+	GenTableColumnResp {
+		ID            int64  `json:"id"`
+		GenConfigID   int64  `json:"genConfigId"`
+		ColumnName    string `json:"columnName"`
+		ColumnComment string `json:"columnComment"`
+		ColumnType    string `json:"columnType"`
+		GoType        string `json:"goType"`
+		GoField       string `json:"goField"`
+		IsPk          int    `json:"isPk"`
+		IsIncrement   int    `json:"isIncrement"`
+		IsRequired    int    `json:"isRequired"`
+		IsInsert      int    `json:"isInsert"`
+		IsEdit        int    `json:"isEdit"`
+		IsList        int    `json:"isList"`
+		IsQuery       int    `json:"isQuery"`
+		QueryType     string `json:"queryType"`
+		HtmlType      string `json:"htmlType"`
+		DictType      string `json:"dictType"`
+		Sort          int    `json:"sort"`
+	}
+	// 配置列表请求
+	GenConfigListReq {
+		Page      int    `form:"page,default=1"`
+		PageSize  int    `form:"pageSize,default=10"`
+		TableName string `form:"tableName,optional"`
+	}
+	// 配置列表响应
+	GenConfigListResp {
+		Total int64           `json:"total"`
+		Data  []GenConfigResp `json:"data"`
+	}
+)
+
+// ==================== 代码生成历史管理 ====================
+type (
+	// 生成历史响应
+	GenHistoryResp {
+		ID          int64  `json:"id"`
+		GenConfigID int64  `json:"genConfigId"`
+		TableName   string `json:"tableName"`
+		FilePath    string `json:"filePath"`
+		FileType    string `json:"fileType"`
+		Content     string `json:"content"`
+		Status      int    `json:"status"`
+		ErrorMsg    string `json:"errorMsg"`
+		Operator    string `json:"operator"`
+		CreatedAt   string `json:"createdAt"`
+	}
+	// 历史列表请求
+	GenHistoryListReq {
+		Page      int    `form:"page,default=1"`
+		PageSize  int    `form:"pageSize,default=10"`
+		TableName string `form:"tableName,optional"`
+	}
+	// 历史列表响应
+	GenHistoryListResp {
+		Total int64            `json:"total"`
+		Data  []GenHistoryResp `json:"data"`
+	}
+)
+
+// ==================== 代码生成操作 ====================
+type (
+	// 代码生成请求
+	CodeGenerateReq {
+		ID int64 `json:"id"`
+	}
+	// 代码生成响应
+	CodeGenerateResp {
+		Success   bool             `json:"success"`
+		Message   string           `json:"message"`
+		Files     []GeneratedFile  `json:"files,omitempty"`
+		Histories []GenHistoryResp `json:"histories,omitempty"`
+	}
+	// 生成的文件信息
+	GeneratedFile {
+		FilePath string `json:"filePath"`
+		FileType string `json:"fileType"`
+		Content  string `json:"content"`
+	}
+	// 预览代码请求
+	CodePreviewReq {
+		ID int64 `json:"id"`
+	}
+	// 预览代码响应
+	CodePreviewResp {
+		Files []GeneratedFile `json:"files"`
+	}
+)
+
+// ==================== 数据库表信息 ====================
+type (
+	// 数据库表信息
+	DatabaseTableInfo {
+		TableName    string       `json:"tableName"`
+		TableComment string       `json:"tableComment"`
+		Engine       string       `json:"engine"`
+		Charset      string       `json:"charset"`
+		Columns      []ColumnInfo `json:"columns"`
+	}
+	// 字段信息
+	ColumnInfo {
+		ColumnName    string `json:"columnName"`
+		ColumnType    string `json:"columnType"`
+		DataType      string `json:"dataType"`
+		ColumnComment string `json:"columnComment"`
+		IsNullable    string `json:"isNullable"`
+		ColumnKey     string `json:"columnKey"`
+		Extra         string `json:"extra"`
+	}
+	// 获取数据库表列表请求
+	GetDatabaseTablesReq {
+		TableName string `form:"tableName,optional"`
+	}
+	// 获取数据库表列表响应
+	GetDatabaseTablesResp {
+		Tables []DatabaseTableInfo `json:"tables"`
+	}
+)
+
+// ==================== 路由定义 ====================
+@server (
+	prefix:     /api/admin/codegen
+	group:      codegen
+	middleware: AdminAuthMiddleware
+)
+service power-api {
+	// 配置管理
+	@handler CreateConfig
+	post /config (GenConfigReq) returns (GenConfigResp)
+
+	@handler UpdateConfig
+	put /config/:id (GenConfigReq) returns (GenConfigResp)
+
+	@handler DeleteConfig
+	delete /config/:id
+
+	@handler GetConfig
+	get /config/:id returns (GenConfigResp)
+
+	@handler ListConfig
+	get /config/list (GenConfigListReq) returns (GenConfigListResp)
+
+	// 代码生成
+	@handler GenerateCode
+	post /generate (CodeGenerateReq) returns (CodeGenerateResp)
+
+	@handler PreviewCode
+	post /preview (CodePreviewReq) returns (CodePreviewResp)
+
+	// 生成历史
+	@handler ListHistory
+	get /history/list (GenHistoryListReq) returns (GenHistoryListResp)
+
+	@handler GetHistory
+	get /history/:id returns (GenHistoryResp)
+
+	@handler DeleteHistory
+	delete /history/:id
+
+	// 数据库表信息
+	@handler GetDatabaseTables
+	get /database/tables (GetDatabaseTablesReq) returns (GetDatabaseTablesResp)
+
+	@handler ImportTable
+	post /import/table (GenConfigReq) returns (GenConfigResp)
+}
+

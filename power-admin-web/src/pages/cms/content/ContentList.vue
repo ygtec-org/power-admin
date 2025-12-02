@@ -28,15 +28,15 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in contentList" :key="item.Id">
-            <td>{{ item.Id }}</td>
-            <td>{{ item.Title }}</td>
-            <td><span :class="['badge', getStatusClass(item.Status)]">{{ getStatusText(item.Status) }}</span></td>
-            <td>{{ item.ViewCount || 0 }}</td>
-            <td>{{ formatDate(item.CreatedAt) }}</td>
+          <tr v-for="item in contentList" :key="item.id">
+            <td>{{ item.id }}</td>
+            <td>{{ item.title }}</td>
+            <td><span :class="['badge', getStatusClass(item.status)]">{{ getStatusText(item.status) }}</span></td>
+            <td>{{ item.viewCount || 0 }}</td>
+            <td>{{ formatDate(item.createdAt) }}</td>
             <td class="action-cell">
               <button @click="editContent(item)" class="btn-small">编辑</button>
-              <button @click="deleteContent(item.Id)" class="btn-small delete">删除</button>
+              <button @click="deleteItem(item.id)" class="btn-small delete">删除</button>
             </td>
           </tr>
         </tbody>
@@ -60,21 +60,21 @@
         <div class="modal-body">
           <div class="form-group">
             <label>标题</label>
-            <input v-model="formData.Title" type="text" class="form-input">
+            <input v-model="formData.title" type="text" class="form-input">
           </div>
           <div class="form-group">
             <label>描述</label>
-            <textarea v-model="formData.Description" class="form-textarea" rows="3"></textarea>
+            <textarea v-model="formData.description" class="form-textarea" rows="3"></textarea>
           </div>
           <div class="form-group">
             <label>内容</label>
-            <textarea v-model="formData.Content" class="form-textarea" rows="8"></textarea>
+            <textarea v-model="formData.content" class="form-textarea" rows="8"></textarea>
           </div>
           <div class="form-group">
             <label>状态</label>
-            <select v-model="formData.Status" class="form-input">
-              <option value="1">草稿</option>
-              <option value="2">已发布</option>
+            <select v-model="formData.status" class="form-input">
+              <option :value="1">草稿</option>
+              <option :value="2">已发布</option>
             </select>
           </div>
         </div>
@@ -89,6 +89,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getContentList, createContent, updateContent, deleteContent } from '@/api/cms'
 
 const contentList = ref([])
 const currentPage = ref(1)
@@ -102,28 +104,30 @@ const editingId = ref(null)
 const loading = ref(false)
 
 const formData = ref({
-  Title: '',
-  Description: '',
-  Content: '',
-  Status: '1',
+  title: '',
+  description: '',
+  content: '',
+  slug: '',
+  categoryId: 0,
+  status: 1,
 })
 
 const loadContent = async () => {
   loading.value = true
   try {
-    const params = new URLSearchParams({
+    const params = {
       page: currentPage.value,
       pageSize: pageSize.value,
-    })
-    if (searchQuery.value) params.append('search', searchQuery.value)
-    if (filterStatus.value) params.append('status', filterStatus.value)
+    }
+    if (searchQuery.value) params.search = searchQuery.value
+    if (filterStatus.value) params.status = parseInt(filterStatus.value)
 
-    const response = await fetch(`/api/cms/content/list?${params}`)
-    const data = await response.json()
+    const res = await getContentList(params)
+    console.log('API 返回数据:', res)
     
-    if (data.code === 0 && data.data) {
-      contentList.value = data.data.Data || []
-      totalCount.value = data.data.Total || 0
+    if (res.data) {
+      contentList.value = res.data.data || []
+      totalCount.value = res.data.total || 0
       totalPages.value = Math.ceil(totalCount.value / pageSize.value) || 1
     }
   } catch (error) {
@@ -135,13 +139,27 @@ const loadContent = async () => {
 
 const openCreateModal = () => {
   editingId.value = null
-  formData.value = { Title: '', Description: '', Content: '', Status: '1' }
+  formData.value = { 
+    title: '', 
+    description: '', 
+    content: '', 
+    slug: '',
+    categoryId: 0,
+    status: 1 
+  }
   showModal.value = true
 }
 
 const editContent = (item) => {
-  editingId.value = item.Id
-  formData.value = { ...item }
+  editingId.value = item.id
+  formData.value = { 
+    title: item.title,
+    description: item.description,
+    content: item.content,
+    slug: item.slug,
+    categoryId: item.categoryId || 0,
+    status: item.status
+  }
   showModal.value = true
 }
 
@@ -151,41 +169,52 @@ const closeModal = () => {
 
 const saveContent = async () => {
   try {
-    const url = editingId.value ? `/api/cms/content/${editingId.value}` : '/api/cms/content'
-    const method = editingId.value ? 'PUT' : 'POST'
-    
-    const response = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData.value),
-    })
-    const data = await response.json()
-    
-    if (data.code === 0) {
-      alert(editingId.value ? '更新成功' : '创建成功')
-      closeModal()
-      currentPage.value = 1
-      loadContent()
+    if (editingId.value) {
+      await updateContent(editingId.value, formData.value)
+      ElMessage({
+        message: '更新成功',
+        type: 'success',
+        duration: 2000,
+        offset: 20,
+      })
     } else {
-      alert(data.msg || '操作失败')
+      await createContent(formData.value)
+      ElMessage({
+        message: '创建成功',
+        type: 'success',
+        duration: 2000,
+        offset: 20,
+      })
     }
+    closeModal()
+    currentPage.value = 1
+    loadContent()
   } catch (error) {
     console.error('保存失败:', error)
   }
 }
 
-const deleteContent = async (id) => {
-  if (!confirm('确定删除？')) return
-  try {
-    const response = await fetch(`/api/cms/content/${id}`, { method: 'DELETE' })
-    const data = await response.json()
-    if (data.code === 0) {
-      alert('删除成功')
+const deleteItem = async (id) => {
+  ElMessageBox.confirm('确定删除此内容吗？', '提示', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(async () => {
+    try {
+      await deleteContent(id)
+      ElMessage({
+        message: '删除成功',
+        type: 'success',
+        duration: 2000,
+        offset: 20,
+      })
       loadContent()
+    } catch (error) {
+      console.error('删除失败:', error)
     }
-  } catch (error) {
-    console.error('删除失败:', error)
-  }
+  }).catch(() => {
+    // 用户取消删除
+  })
 }
 
 const prevPage = () => {
@@ -203,18 +232,16 @@ const nextPage = () => {
 }
 
 const getStatusText = (status) => {
-  const map = { 1: '草稿', 2: '已发布', 3: '已删除' }
-  return map[status] || '未知'
+  return status === 1 ? '草稿' : '已发布'
 }
 
 const getStatusClass = (status) => {
-  const map = { 1: 'draft', 2: 'published', 3: 'deleted' }
-  return map[status] || ''
+  return status === 1 ? 'badge-draft' : 'badge-published'
 }
 
-const formatDate = (date) => {
-  if (!date) return '-'
-  return new Date(date).toLocaleDateString('zh-CN')
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.substring(0, 19).replace('T', ' ')
 }
 
 onMounted(() => {

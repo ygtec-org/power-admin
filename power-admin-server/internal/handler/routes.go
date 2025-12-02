@@ -8,6 +8,8 @@ import (
 
 	app "power-admin-server/internal/handler/app"
 	auth "power-admin-server/internal/handler/auth"
+	cms "power-admin-server/internal/handler/cms"
+	codegen "power-admin-server/internal/handler/codegen"
 	dicts "power-admin-server/internal/handler/dicts"
 	iface "power-admin-server/internal/handler/iface"
 	menu "power-admin-server/internal/handler/menu"
@@ -84,6 +86,253 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/admin"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AdminAuthMiddleware},
+			[]rest.Route{
+				{
+					// 创建分类
+					Method:  http.MethodPost,
+					Path:    "/category",
+					Handler: cms.CategoryCreateHandler(serverCtx),
+				},
+				{
+					// 更新分类
+					Method:  http.MethodPut,
+					Path:    "/category/:id",
+					Handler: cms.CategoryUpdateHandler(serverCtx),
+				},
+				{
+					// 删除分类
+					Method:  http.MethodDelete,
+					Path:    "/category/:id",
+					Handler: cms.CategoryDeleteHandler(serverCtx),
+				},
+				{
+					// 获取分类列表
+					Method:  http.MethodGet,
+					Path:    "/category/list",
+					Handler: cms.CategoryListHandler(serverCtx),
+				},
+				{
+					// 获取分类树
+					Method:  http.MethodGet,
+					Path:    "/category/tree",
+					Handler: cms.CategoryTreeHandler(serverCtx),
+				},
+				{
+					// 删除评论
+					Method:  http.MethodDelete,
+					Path:    "/comment/:id",
+					Handler: cms.CommentDeleteHandler(serverCtx),
+				},
+				{
+					// 审核评论
+					Method:  http.MethodPost,
+					Path:    "/comment/:id/approve",
+					Handler: cms.CommentApproveHandler(serverCtx),
+				},
+				{
+					// 拒绝评论
+					Method:  http.MethodPost,
+					Path:    "/comment/:id/reject",
+					Handler: cms.CommentRejectHandler(serverCtx),
+				},
+				{
+					// 获取评论列表
+					Method:  http.MethodGet,
+					Path:    "/comment/list",
+					Handler: cms.CommentListHandler(serverCtx),
+				},
+				{
+					// 创建内容
+					Method:  http.MethodPost,
+					Path:    "/content",
+					Handler: cms.ContentCreateHandler(serverCtx),
+				},
+				{
+					// 获取内容详情
+					Method:  http.MethodGet,
+					Path:    "/content/:id",
+					Handler: cms.ContentGetHandler(serverCtx),
+				},
+				{
+					// 更新内容
+					Method:  http.MethodPut,
+					Path:    "/content/:id",
+					Handler: cms.ContentUpdateHandler(serverCtx),
+				},
+				{
+					// 删除内容
+					Method:  http.MethodDelete,
+					Path:    "/content/:id",
+					Handler: cms.ContentDeleteHandler(serverCtx),
+				},
+				{
+					// 发布内容
+					Method:  http.MethodPost,
+					Path:    "/content/:id/publish",
+					Handler: cms.ContentPublishHandler(serverCtx),
+				},
+				{
+					// 取消发布
+					Method:  http.MethodPost,
+					Path:    "/content/:id/unpublish",
+					Handler: cms.ContentUnpublishHandler(serverCtx),
+				},
+				{
+					// 获取内容列表
+					Method:  http.MethodGet,
+					Path:    "/content/list",
+					Handler: cms.ContentListHandler(serverCtx),
+				},
+				{
+					// 批量发布
+					Method:  http.MethodPost,
+					Path:    "/publish/batch",
+					Handler: cms.PublishBatchHandler(serverCtx),
+				},
+				{
+					// 取消定时发布
+					Method:  http.MethodPost,
+					Path:    "/publish/cancel/:id",
+					Handler: cms.PublishCancelHandler(serverCtx),
+				},
+				{
+					// 立即发布
+					Method:  http.MethodPost,
+					Path:    "/publish/immediate",
+					Handler: cms.PublishImmediateHandler(serverCtx),
+				},
+				{
+					// 定时发布
+					Method:  http.MethodPost,
+					Path:    "/publish/schedule",
+					Handler: cms.PublishScheduleHandler(serverCtx),
+				},
+				{
+					// 创建标签
+					Method:  http.MethodPost,
+					Path:    "/tag",
+					Handler: cms.TagCreateHandler(serverCtx),
+				},
+				{
+					// 更新标签
+					Method:  http.MethodPut,
+					Path:    "/tag/:id",
+					Handler: cms.TagUpdateHandler(serverCtx),
+				},
+				{
+					// 删除标签
+					Method:  http.MethodDelete,
+					Path:    "/tag/:id",
+					Handler: cms.TagDeleteHandler(serverCtx),
+				},
+				{
+					// 获取标签列表
+					Method:  http.MethodGet,
+					Path:    "/tag/list",
+					Handler: cms.TagListHandler(serverCtx),
+				},
+				{
+					// 获取用户信息
+					Method:  http.MethodGet,
+					Path:    "/user/:id",
+					Handler: cms.UserGetHandler(serverCtx),
+				},
+				{
+					// 禁用用户
+					Method:  http.MethodPost,
+					Path:    "/user/:id/disable",
+					Handler: cms.UserDisableHandler(serverCtx),
+				},
+				{
+					// 启用用户
+					Method:  http.MethodPost,
+					Path:    "/user/:id/enable",
+					Handler: cms.UserEnableHandler(serverCtx),
+				},
+				{
+					// 获取用户列表
+					Method:  http.MethodGet,
+					Path:    "/user/list",
+					Handler: cms.UserListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/cms"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.AdminAuthMiddleware},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/config",
+					Handler: codegen.CreateConfigHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPut,
+					Path:    "/config/:id",
+					Handler: codegen.UpdateConfigHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodDelete,
+					Path:    "/config/:id",
+					Handler: codegen.DeleteConfigHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/config/:id",
+					Handler: codegen.GetConfigHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/config/list",
+					Handler: codegen.ListConfigHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/database/tables",
+					Handler: codegen.GetDatabaseTablesHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/generate",
+					Handler: codegen.GenerateCodeHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/history/:id",
+					Handler: codegen.GetHistoryHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodDelete,
+					Path:    "/history/:id",
+					Handler: codegen.DeleteHistoryHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/history/list",
+					Handler: codegen.ListHistoryHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/import/table",
+					Handler: codegen.ImportTableHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/preview",
+					Handler: codegen.PreviewCodeHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/api/admin/codegen"),
 	)
 
 	server.AddRoutes(

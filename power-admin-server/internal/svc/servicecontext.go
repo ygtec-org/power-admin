@@ -40,6 +40,9 @@ type ServiceContext struct {
 	CmsUserRepo     repository.CmsUserRepository
 	CmsCommentRepo  repository.CommentRepository
 
+	// Codegen Repository
+	CodegenRepo repository.CodegenRepository
+
 	// Services
 	PluginService *service.PluginService
 
@@ -88,9 +91,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	cmsUserRepo := repository.NewCmsUserRepository(db)
 	cmsCommentRepo := repository.NewCommentRepository(db)
 
-	// 初始化PluginService - 使用绝对路径
-	pluginService := service.NewPluginService(getPluginsDir())
+	// 初始化Codegen repository
+	codegenRepo := repository.NewCodegenRepository(db)
 
+	// 初始化PluginService - 使用绝对路径
+	pluginService := service.NewPluginService(getPluginsDir(), db)
 	return &ServiceContext{
 		Config:              c,
 		DB:                  db,
@@ -107,6 +112,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		CmsTagRepo:          cmsTagRepo,
 		CmsUserRepo:         cmsUserRepo,
 		CmsCommentRepo:      cmsCommentRepo,
+		CodegenRepo:         codegenRepo,
 		PluginService:       pluginService,
 		Permission:          permissionManager,
 		AdminAuthMiddleware: middleware.NewAdminAuthMiddleware(&c, permissionManager).Handle,
@@ -129,6 +135,7 @@ func autoMigrate(db *gorm.DB) error {
 		&models.Plugin{},
 		&models.RoleMenu{},
 		&models.CasbinRule{},
+		&models.UserRole{},
 
 		// CMS模型
 		//&models.CmsContent{},
@@ -144,6 +151,11 @@ func autoMigrate(db *gorm.DB) error {
 		//&models.CmsAuditLog{},
 		//&models.CmsLike{},
 		//&models.CmsDraft{},
+
+		// 代码生成器模型
+		&models.GenConfig{},
+		&models.GenTableColumn{},
+		&models.GenHistory{},
 	)
 }
 
@@ -161,7 +173,7 @@ func getPluginsDir() string {
 
 	// 如果在 bin 目录中，往上两级到 power-admin 项目根目录
 	// 例如: d:\Workspace\project\app\power-admin\power-admin-server\bin\power-admin.exe
-	// 我们需要: d:\Workspace\project\app\power-admin\plugins
+	// 我们需要 d:\Workspace\project\app\power-admin\plugins
 	// bin -> power-admin-server -> power-admin
 	projectRoot := filepath.Join(execDir, "..", "..")
 	pluginDir := filepath.Join(projectRoot, "plugins")
